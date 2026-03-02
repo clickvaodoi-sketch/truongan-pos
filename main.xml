@@ -6,7 +6,6 @@
 <b:include data='blog' name='all-head-content'/>
 <meta content='width=device-width, initial-scale=1, maximum-scale=1' name='viewport'/>
 <title>Trường An Store - ERP PRO V31</title>
-
 <script src='https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js' type='text/javascript'/>
 
 <b:skin><![CDATA[
@@ -17,12 +16,22 @@ body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; backgr
 * { box-sizing: border-box; }
 
 .header { background:linear-gradient(135deg,#0070f4,#00c6ff); color:#fff; padding:10px 15px; display:flex; justify-content:space-between; align-items:center; position:fixed; top:0; left:0; width:100%; z-index:999; box-shadow:0 2px 10px rgba(0,0,0,0.15); transition: background 0.3s;}
-.header-title { font-weight:bold; font-size:18px; white-space:nowrap; letter-spacing: 1px;}
-.header-btns { display:flex; gap:8px; align-items:center; }
-.icon-btn { background:rgba(255,255,255,0.2); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:5px; position:relative; transition:0.2s; white-space:nowrap; font-weight:600;}
+.header-title { font-weight:bold; font-size:18px; white-space:nowrap; letter-spacing: 1px; flex-shrink: 0;}
+
+/* FIX LỖI 2: MENU ĐIỆN THOẠI TRƯỢT NGANG NGAY NGẮN */
+.header-btns { display:flex; gap:8px; align-items:center; overflow-x:auto; white-space:nowrap; max-width: 70%; padding-bottom: 2px; -ms-overflow-style: none; scrollbar-width: none; }
+.header-btns::-webkit-scrollbar { display: none; }
+.icon-btn { background:rgba(255,255,255,0.2); border:none; color:#fff; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:14px; display:flex; align-items:center; gap:5px; position:relative; transition:0.2s; font-weight:600;}
 .icon-btn:hover { background:rgba(255,255,255,0.3); }
 .badge { position:absolute; top:-5px; right:-5px; background:#ef4444; color:#fff; font-size:10px; padding:2px 5px; border-radius:10px; font-weight:bold; }
 
+@media (max-width: 768px) {
+    .header-title { font-size: 15px; max-width: 35%; overflow: hidden; text-overflow: ellipsis; }
+    .icon-btn { padding: 6px 8px; font-size: 14px; }
+    .hide-text-mobile { display: none; } /* Ẩn bớt chữ trên điện thoại cho gọn */
+}
+
+/* Các CSS bên dưới giữ nguyên... */
 .nav { display:flex; justify-content:space-around; background:#fff; padding:12px 0; position:fixed; bottom:0; width:100%; box-shadow:0 -2px 10px rgba(0,0,0,0.1); z-index:998; transition: background 0.3s, box-shadow 0.3s;}
 .nav div { font-size:22px; cursor:pointer; padding:5px 15px; border-radius:10px; transition:0.2s; text-align:center; flex:1; color:#555; }
 .nav div:hover { background:#f0f4f8; }
@@ -59,19 +68,9 @@ body { margin:0; font-family:-apple-system,BlinkMacSystemFont,sans-serif; backgr
 .btn-edit-tiny { position:absolute; top:10px; left:10px; background:rgba(255,255,255,0.9); border:1px solid #eee; border-radius:50%; width:32px; height:32px; display:flex; justify-content:center; align-items:center; cursor:pointer; font-size:14px; z-index:10; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:0.2s; color:#0070f4; }
 .btn-edit-tiny:hover { background:#0070f4; color:#fff; border-color:#0070f4; }
 
-/* FIX BẢNG & TỶ LỆ CỘT */
 .table-responsive { width:100%; background:#fff; border-radius:10px; border:1px solid #f0f0f0; transition: background 0.3s; overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width:100%; border-collapse:collapse; table-layout: fixed; min-width: 900px;}
-
-th, td { 
-    padding: 12px 10px; 
-    text-align: left; 
-    vertical-align: middle; 
-    box-sizing: border-box;
-    overflow: hidden; 
-    text-overflow: ellipsis; 
-    white-space: nowrap;
-}
+th, td { padding: 12px 10px; text-align: left; vertical-align: middle; box-sizing: border-box; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;}
 th { background:#4285f4; color:#fff; font-weight:600; font-size:13px; border:none; position:relative; }
 td { border-bottom:1px solid #eee; font-size:13px; }
 tr:hover { background:#f8fafc; }
@@ -87,7 +86,6 @@ td.actions { white-space: nowrap; overflow: visible; display:flex; gap:5px; alig
 .col-id { width: 110px; }
 .col-phone { width: 120px; }
 .col-money { width: 120px; text-align: right; }
-
 .th-cus-id { width: 90px; }
 .th-cus-name { width: auto; min-width: 200px; } 
 .th-cus-phone { width: 130px; }
@@ -102,7 +100,6 @@ td.actions { white-space: nowrap; overflow: visible; display:flex; gap:5px; alig
 
 .editable-cell { cursor:text; border:1px dashed transparent; padding:4px 8px !important; border-radius:4px; transition:0.2s; }
 .editable-cell:focus { background:inherit; border-color:#0070f4; outline:none; box-shadow:0 0 0 2px rgba(0,112,244,0.1); }
-
 .cat-cell-inline { cursor:pointer; font-weight:500; transition:0.2s; }
 .cat-cell-inline:hover { background:#f0fdfa; }
 .cat-badge { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-size: 11px; margin-right: 4px; display: inline-block; border: 1px solid #bae6fd; font-weight:bold; }
@@ -111,9 +108,6 @@ td.actions { white-space: nowrap; overflow: visible; display:flex; gap:5px; alig
 
 @media (max-width: 768px) { th, td { padding: 10px 8px; font-size: 12px; } .hide-on-mobile { display:none; } table { min-width: auto; table-layout: auto; display:block; } .resizer { display:none; } }
 
-/* =========================================
-   4. CÔNG CỤ VÀ MENU CHUNG
-========================================= */
 .sub-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; background:#fff; padding:10px 15px; border-radius:10px; flex-wrap:wrap; gap:10px; box-shadow:0 1px 4px rgba(0,0,0,0.05); transition:background 0.3s; }
 .view-toggle { display:flex; background:#f0f2f5; border-radius:20px; overflow:hidden; padding:3px; }
 .view-toggle button { padding:6px 15px; border:none; background:transparent; cursor:pointer; font-size:13px; border-radius:18px; font-weight:600; color:#555;}
@@ -141,7 +135,6 @@ input.form-inp:focus, textarea.form-inp:focus { border-color:#0070f4; box-shadow
 .bulk-bar { display:none; background:#e0f2fe; padding:15px; border-radius:12px; margin-bottom:15px; flex-direction:column; border:1px solid #bae6fd; }
 .bulk-grid { display:grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap:10px; width:100%; }
 
-/* MODALS */
 .modal { display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.6); align-items:center; justify-content:center; padding:15px; backdrop-filter: blur(2px);}
 .modal-content { background:#fff; padding:25px; border-radius:15px; width:100%; max-width:650px; max-height:85vh; overflow-y:auto; position:relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3); transition: background 0.3s;}
 .close-btn { position:absolute; right:15px; top:15px; font-size:20px; cursor:pointer; background:#f0f2f5; border:none; width:35px; height:35px; border-radius:50%; z-index:2005; display:flex; align-items:center; justify-content:center; color:#333; transition:0.2s;}
@@ -156,22 +149,18 @@ input.form-inp:focus, textarea.form-inp:focus { border-color:#0070f4; box-shadow
 .summary-row.tong-cong { font-weight:bold; font-size:20px; color:#10b981; background:#d1fae5; padding:8px; border-radius:6px; margin-top:8px;}
 
 .item-edit-input { width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 13px; text-align: center; outline: none; transition: 0.2s; background:#fff; color:inherit;}
-.item-edit-input:focus { border-color: #0070f4; box-shadow: 0 0 0 2px rgba(0,112,244,0.1); }
 .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 15px; }
 .form-grid-full { grid-column: span 2; }
 
-/* ORDER DETAILS UI */
 .order-detail-box { background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; padding:12px; margin-bottom:15px; color:inherit; }
 .order-detail-note { background:#fef2f2; border-left:4px solid #ef4444; padding:8px 12px; margin-bottom:15px; font-size:13px; color:#b91c1c; }
 .order-item-row { display:flex; justify-content:space-between; margin-bottom:8px; border-bottom:1px dashed #f0f0f0; padding-bottom:8px; }
 
-/* GỢI Ý KHÁCH HÀNG */
 .suggest-box { position:absolute; background:#fff; width:100%; border:1px solid #0070f4; border-top:none; border-radius:0 0 8px 8px; z-index:3000; box-shadow:0 4px 15px rgba(0,112,244,0.2); display:none; max-height:200px; overflow-y:auto; top:100%; left:0;}
 .suggest-item { padding:10px 15px; border-bottom:1px dashed #eee; cursor:pointer; font-size:13px; transition:0.2s; color:#333;}
 .suggest-item:hover { background:#f0fdfa; padding-left:20px; }
 .debt-badge { background:#fee2e2; color:#ef4444; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px; font-weight:bold; }
 
-/* UI CUSTOMER CARD MỚI */
 .cus-card { display:flex; flex-direction:column; background:#fff; padding:15px; border-radius:12px; box-shadow:0 2px 8px rgba(0,0,0,0.06); border:1px solid #f0f0f0; transition:0.3s; position:relative; }
 .cus-card-header { display:flex; align-items:center; gap:12px; margin-bottom:15px; padding-bottom:12px; border-bottom:1px dashed #eee; }
 .cus-avt { width:45px; height:45px; border-radius:50%; background:linear-gradient(135deg,#0070f4,#00c6ff); color:#fff; display:flex; justify-content:center; align-items:center; font-size:20px; font-weight:bold; text-transform:uppercase; flex-shrink:0;}
@@ -184,40 +173,31 @@ input.form-inp:focus, textarea.form-inp:focus { border-color:#0070f4; box-shadow
 .cus-stats div { display:flex; flex-direction:column; }
 .cus-stats strong { font-size:14px; margin-top:3px; }
 
-/* RETURN UI ELEMENTS */
 .return-zone-box { background:#fef2f2; padding:15px; border-radius:8px; border:1px solid #fecaca; margin-bottom:15px; transition:0.3s; }
 .return-list-box { min-height:100px; max-height:250px; overflow-y:auto; border:1px solid #ccc; border-radius:8px; padding:10px; margin-bottom:15px; background:#fff; transition:0.3s; }
 .return-total-box { display:flex; justify-content:space-between; align-items:center; background:#f8fafc; padding:15px; border-radius:8px; border:1px solid #e2e8f0; margin-bottom:15px; transition:0.3s; }
 
-/* CSS MÀN HÌNH ĐĂNG NHẬP BẢO MẬT */
 #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0f172a; z-index: 10000; display: flex; align-items: center; justify-content: center; flex-direction: column; }
 .login-box { background: #1e293b; padding: 30px; border-radius: 15px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.5); border: 1px solid #334155; }
 
-/* =========================================
-   5. DARK THEME GLOBAL
-========================================= */
 body.dark-theme { background: #0f172a; color: #f8fafc; }
 body.dark-theme .header { background: #1e293b; border-bottom:1px solid #334155; box-shadow:none;}
 body.dark-theme .nav { background: #1e293b; border-top: 1px solid #334155; box-shadow: none; }
 body.dark-theme .nav div { color:#cbd5e1; }
 body.dark-theme .nav div.active { color:#38bdf8; }
 body.dark-theme .nav div:hover { background:#334155; }
-
 body.dark-theme .card, body.dark-theme .cus-card, body.dark-theme .modal-content, body.dark-theme .sub-toolbar, body.dark-theme .table-responsive, body.dark-theme .chart-container, body.dark-theme .dashboard-metric { background: #1e293b; border:1px solid #334155; color: #f8fafc; box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);}
 body.dark-theme input.form-inp, body.dark-theme select.form-inp, body.dark-theme textarea.form-inp, body.dark-theme .tab-search-bar, body.dark-theme .item-edit-input, body.dark-theme .inline-km-inp { background: #334155; color: #f8fafc; border-color: #475569; }
-
 body.dark-theme table { color: #f8fafc; border-color: #334155; }
 body.dark-theme th { background: #1e3a8a; border-color: #334155; color:#cbd5e1; }
 body.dark-theme td { border-color: #334155; }
 body.dark-theme tr:hover { background: #334155; }
-
 body.dark-theme .card-header { color:#38bdf8; border-color:#334155; }
 body.dark-theme .card-row .lbl { color:#cbd5e1; }
 body.dark-theme .cus-card-header { border-color:#334155; }
 body.dark-theme .cus-info h4 { color:#f8fafc; }
 body.dark-theme .cus-info span { color:#94a3b8; }
 body.dark-theme .cus-stats { background: #0f172a; }
-
 body.dark-theme .suggest-box, body.dark-theme .dropdown-content { background: #1e293b; border-color: #475569; color:#f8fafc; }
 body.dark-theme .suggest-item, body.dark-theme .dropdown-content label { border-color:#334155; color:#f8fafc; }
 body.dark-theme .suggest-item:hover, body.dark-theme .cat-cell-inline:hover { background: #38bdf8; color:#fff;}
@@ -237,24 +217,17 @@ body.dark-theme #loadingUI { background: rgba(15,23,42,0.95); color: #38bdf8; }
 body.dark-theme .price-text { color:#f87171; }
 body.dark-theme .bulk-bar { background: #1e293b; border-color: #3b82f6; }
 body.dark-theme .cat-badge.si { background: #4c1d95; color: #fbcfe8; border-color:#831843; } 
-
-/* ORDER DETAILS UI DARK MODE */
 body.dark-theme .order-detail-box { background: #1e293b; border-color: #334155; color: #f8fafc; }
 body.dark-theme .order-detail-note { background: #450a0a; border-color: #7f1d1d; color: #fca5a5; }
 body.dark-theme .order-item-row { border-color: #334155; }
-
-/* RETURN UI DARK MODE */
 body.dark-theme .return-zone-box { background: #450a0a; border-color: #7f1d1d; }
 body.dark-theme .return-zone-box label { color: #fca5a5 !important; }
 body.dark-theme #returnSearchInfo { color: #cbd5e1 !important; }
 body.dark-theme .return-list-box { background: #0f172a; border-color: #334155; color: #f8fafc; }
 body.dark-theme .return-total-box { background: #0f172a; border-color: #334155; color: #f8fafc; }
 body.dark-theme #returnTotalDisplay { color: #f87171; }
-/* CSS cho bảng cảnh báo gộp trùng lặp */
 .dup-group { border: 1px solid #ccc; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fff; transition: background 0.3s, border-color 0.3s; }
 .dup-group-list { margin: 10px 0; padding-left: 10px; border-left: 2px solid #ddd; transition: border-color 0.3s; }
-
-/* Dark mode cho bảng gộp trùng lặp */
 body.dark-theme .dup-group { background: #334155; border-color: #475569; color: #f8fafc; }
 body.dark-theme .dup-group-list { border-color: #475569; }
 ]]></b:skin>
@@ -286,9 +259,10 @@ body.dark-theme .dup-group-list { border-color: #475569; }
         <div class='header'>
           <div class='header-title'>TRƯỜNG AN STORE</div>
           <div class='header-btns'>
-             <button class='icon-btn' onclick='openReturnModal()' style='background:#ef4444; color:#fff;' title='Trả hàng nhanh'>🔄 Trả Hàng</button>
-             <button class='icon-btn' onclick='syncData(true)' title='Tải dữ liệu mới nhất từ Sheet'>&#11015;&#65039; Tải Về</button>
-             <button class='icon-btn' id='syncBtnUI' onclick='pushSyncQueue()' title='Đẩy dữ liệu hiện tại lên Sheet'>&#11014;&#65039; Đẩy Lên</button>
+             <button class='icon-btn' onclick='hardResetCache()' style='background:#64748b; color:#fff;' title='Sửa lỗi kẹt dữ liệu'>🧹 <span class='hide-text-mobile'>Sửa Lỗi</span></button>
+             <button class='icon-btn' onclick='openReturnModal()' style='background:#ef4444; color:#fff;' title='Trả hàng nhanh'>🔄 <span class='hide-text-mobile'>Trả Hàng</span></button>
+             <button class='icon-btn' onclick='syncData(true)' title='Tải dữ liệu mới nhất từ Sheet'>&#11015;&#65039; <span class='hide-text-mobile'>Tải Về</span></button>
+             <button class='icon-btn' id='syncBtnUI' onclick='pushSyncQueue()' title='Đẩy dữ liệu hiện tại lên Sheet'>&#11014;&#65039; <span class='hide-text-mobile'>Đẩy Lên</span></button>
              <button class='icon-btn' id='themeBtn' onclick='toggleTheme()' title='Đổi giao diện'>🌙</button>
              <button class='icon-btn' onclick='handleLogout()' style='background:#f59e0b; color:#fff;' title='Đăng xuất'>🚪</button>
              <span class='badge' id='syncBadge' style='display:none'>0</span>
@@ -349,7 +323,7 @@ body.dark-theme .dup-group-list { border-color: #475569; }
                     <button class='action-btn orange' id='btnCheckDup' onclick='checkDuplicatesFromSheet()'>🔄 Check Trùng</button>
                     <div class='dropdown'>
                         <button class='icon-btn' onclick='toggleDropdown(event, &quot;colMenuProducts&quot;)' style='background:var(--btn-bg, #e2e8f0); color:var(--btn-col, #333); font-size:12px;'>&#9881;&#65039; Cột hiển thị</button>
-                        <div class='dropdown-content' id='colMenuProducts' onclick='event.stopPropagation()'/>
+                        <div class='dropdown-content' id='colMenuProducts'/>
                     </div>
                 </div>
                 <div class='view-toggle'>
@@ -378,7 +352,7 @@ body.dark-theme .dup-group-list { border-color: #475569; }
                     <b style='font-size:16px;'>🧾 ĐƠN HÀNG (<span id='orderCountDisplay' style='color:#0070f4;'>0</span>)</b>
                     <div class='dropdown'>
                         <button class='icon-btn' onclick='toggleDropdown(event, &quot;colMenuOrders&quot;)' style='background:var(--btn-bg, #e2e8f0); color:var(--btn-col, #333); font-size:12px;'>&#9881;&#65039; Cột</button>
-                        <div class='dropdown-content' id='colMenuOrders' onclick='event.stopPropagation()'/>
+                        <div class='dropdown-content' id='colMenuOrders'/>
                     </div>
                 </div>
                 <div style='display:flex; gap:10px; align-items:center;'>
@@ -488,7 +462,7 @@ body.dark-theme .dup-group-list { border-color: #475569; }
                 <div class='form-grid-full'><label style='font-size:12px;opacity:0.8;'>Tên Sản Phẩm *</label><input class='form-inp' id='apName' type='text'/></div>
                 <div><label style='font-size:12px;opacity:0.8;'>Tồn kho nhập vào</label><input class='form-inp' id='apStock' type='number' value='0'/></div>
                 <div>
-                    <label style='font-size:12px;opacity:0.8;'>Danh mục / Nhóm</label>
+                    <label style='font-size:12px;opacity:0.8;'>Loại - N</label>
                     <input class='form-inp' id='apCat' list='catDatalist' placeholder='Gõ để chọn hoặc tạo mới' type='text'/>
                 </div>
                 <div><label style='font-size:12px;opacity:0.8;'>Giá Gốc (Nhập)</label><input class='form-inp' id='apCost' type='number' value='0'/></div>
@@ -532,7 +506,7 @@ body.dark-theme .dup-group-list { border-color: #475569; }
             </select>
             <label style='font-size:12px; opacity:0.8;'>Địa chỉ</label>
             <input class='form-inp' id='cusEditAddress' placeholder='Nhập Địa chỉ...' type='text'/>
-            <label style='font-size:12px; opacity:0.8;'>Nợ Đầu Kỳ (Nợ cũ nhập tay trước khi dùng App)</label>
+            <label style='font-size:12px; opacity:0.8;'>Nợ Đầu Kỳ (Chỉ nhập 1 lần)</label>
             <input class='form-inp' id='cusEditDebt' placeholder='Nhập số tiền nợ...' type='number'/>
             <button class='action-btn blue' onclick='saveCustomer()' style='padding:12px; width:100%; margin-top:10px;'>LƯU LẠI</button>
           </div>
@@ -663,7 +637,6 @@ body.dark-theme .dup-group-list { border-color: #475569; }
         </div>
 
         <script src='https://raw.githack.com/clickvaodoi-sketch/truongan-pos/refs/heads/main/module-core.js'/>
-        
         <script src='https://raw.githack.com/clickvaodoi-sketch/truongan-pos/refs/heads/main/module-dashboard.js'/>
         <script src='https://raw.githack.com/clickvaodoi-sketch/truongan-pos/refs/heads/main/module-product.js'/>
         <script src='https://raw.githack.com/clickvaodoi-sketch/truongan-pos/refs/heads/main/module-order.js'/>
@@ -672,12 +645,18 @@ body.dark-theme .dup-group-list { border-color: #475569; }
 
         <script type='text/javascript'>
         //<![CDATA[
+        function hardResetCache() {
+            if(confirm("Hành động này sẽ XÓA BỘ NHỚ TẠM để tải lại dữ liệu mới nhất từ Sheet.\n\nDùng nút này khi:\n1. Bảng sản phẩm bị trắng.\n2. Cột hiển thị bị lỗi.\n3. Dữ liệu trên Sheet và Web không khớp nhau.\n\nXác nhận xóa và tải lại?")) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => { 
             let ui = document.getElementById("loadingUI"); 
             if(ui) ui.style.display = "flex";
             if(localStorage.getItem('theme') === 'dark') toggleTheme();
             
-            // Chờ 1 giây để đảm bảo file từ GitHub load xong
             setTimeout(() => {
                 if(typeof ALL_PRODUCTS === 'undefined') {
                     alert("Lỗi: Không tải được file module-core.js từ GitHub! Vui lòng kiểm tra lại link.");
