@@ -50,6 +50,12 @@ function renderProductsData(resetLimit = false) {
         let exclude = ['link ảnh', 'chi tiết json', '% khuyến mãi', 'giá khuyến mãi', '% km', 'giá km'];
         let keys = Object.keys(ALL_PRODUCTS[0] || {}); 
         let vis = keys.filter(k => !hiddenColsProducts[k] && !exclude.some(ex => String(k).toLowerCase().includes(ex)));
+        
+        // Nâng cấp 2: Hiển thị Tổng mã và Tổng tồn kho
+        let totalStockVal = filtered.reduce((sum, p) => sum + (Number(p[getKeyByKeyword(p, 'tồn kho')])||0), 0);
+        let pcEl = document.getElementById('prodCountDisplay'); 
+        if(pcEl) pcEl.innerText = `${filtered.length} mã | Tồn: ${totalStockVal}`;
+
         let sliced = filtered.slice(0, limitProd);
 
         let html = viewMode === 'table' ? `<div class="table-responsive"><table><thead><tr><th class="col-check"><input type="checkbox" onclick="toggleAllChecks(this)"/></th>` : `<div class="data-grid">`;
@@ -162,113 +168,43 @@ async function checkDuplicatesFromSheet() {
 }
 
 function processAllDuplicates() {
-    let dupGroups = document.querySelectorAll('.dup-group');
-    if(dupGroups.length === 0) return;
-    let hasChanges = false;
-
+    let dupGroups = document.querySelectorAll('.dup-group'); if(dupGroups.length === 0) return; let hasChanges = false;
     dupGroups.forEach(group => {
-        let dupId = group.getAttribute('data-id');
-        let radioOption = group.querySelector(`input[name="dup_${dupId}"]:checked`);
-        if(!radioOption) return;
-        let action = radioOption.value;
-        let items = ALL_PRODUCTS.filter(p => String(p['Mã SP']).trim().toUpperCase() === dupId);
-        if(items.length < 2) return;
+        let dupId = group.getAttribute('data-id'); let radioOption = group.querySelector(`input[name="dup_${dupId}"]:checked`); if(!radioOption) return;
+        let action = radioOption.value; let items = ALL_PRODUCTS.filter(p => String(p['Mã SP']).trim().toUpperCase() === dupId); if(items.length < 2) return;
         hasChanges = true;
-
         if(action === 'merge') {
             let mainItem = items[0]; let keyTonKho = getKeyByKeyword(mainItem, 'tồn kho') || 'Tồn kho';
-            let totalStock = items.reduce((sum, item) => sum + (Number(item[keyTonKho]) || 0), 0);
-            mainItem[keyTonKho] = totalStock;
-            let others = items.slice(1);
-            ALL_PRODUCTS = ALL_PRODUCTS.filter(p => !others.includes(p));
-            addQueueItem('updateProduct', mainItem);
+            let totalStock = items.reduce((sum, item) => sum + (Number(item[keyTonKho]) || 0), 0); mainItem[keyTonKho] = totalStock;
+            let others = items.slice(1); ALL_PRODUCTS = ALL_PRODUCTS.filter(p => !others.includes(p)); addQueueItem('updateProduct', mainItem);
             others.forEach(o => { addQueueItem('deleteProduct', { "Mã SP": o['Mã SP'] }); });
         } else if (action === 'rename') {
-            items.forEach((item, index) => {
-                if(index > 0) {
-                    let oldId = item['Mã SP']; let newId = oldId + '_' + index;
-                    addQueueItem('deleteProduct', { "Mã SP": oldId });
-                    item['Mã SP'] = newId; addQueueItem('updateProduct', item); 
-                }
-            });
+            items.forEach((item, index) => { if(index > 0) { let oldId = item['Mã SP']; let newId = oldId + '_' + index; addQueueItem('deleteProduct', { "Mã SP": oldId }); item['Mã SP'] = newId; addQueueItem('updateProduct', item); } });
         }
     });
 
-    if(hasChanges) {
-        localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); closeModal('dupModal');
-        renderProductsData(); alert("Đã gom các thay đổi! Hệ thống đang xử lý và đẩy lên Google Sheet...");
-        pushSyncQueue();
-    }
+    if(hasChanges) { localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); closeModal('dupModal'); renderProductsData(); alert("Đã gom các thay đổi! Hệ thống đang xử lý và đẩy lên Google Sheet..."); pushSyncQueue(); }
 }
 
-function deleteProductItem(id) {
-    let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return;
-    if(!confirm(`⚠️ Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm:\n[${id}] - ${p['Tên SP']}?`)) return;
-    ALL_PRODUCTS = ALL_PRODUCTS.filter(x => x['Mã SP'] !== id);
-    localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS));
-    addQueueItem('deleteProduct', { "Mã SP": id }); renderProductsData();
-}
-
-function deleteSelectedProducts() {
-    let checkedBoxes = document.querySelectorAll('.chk-box:checked');
-    if(checkedBoxes.length === 0) return alert("Vui lòng chọn ít nhất 1 sản phẩm để xóa!");
-    if(!confirm(`🛑 CẢNH BÁO: Bạn đang chọn xóa ${checkedBoxes.length} sản phẩm cùng lúc.\nHành động này KHÔNG THỂ HOÀN TÁC!\n\nBạn có chắc chắn muốn tiếp tục?`)) return;
-    let idsToDelete = Array.from(checkedBoxes).map(cb => cb.value);
-    idsToDelete.forEach(id => { addQueueItem('deleteProduct', { "Mã SP": id }); });
-    ALL_PRODUCTS = ALL_PRODUCTS.filter(p => !idsToDelete.includes(p['Mã SP']));
-    localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS));
-    document.querySelectorAll('.chk-box').forEach(c => c.checked = false); checkBulk(); renderProductsData();
-}
-
+function deleteProductItem(id) { let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return; if(!confirm(`⚠️ Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm:\n[${id}] - ${p['Tên SP']}?`)) return; ALL_PRODUCTS = ALL_PRODUCTS.filter(x => x['Mã SP'] !== id); localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('deleteProduct', { "Mã SP": id }); renderProductsData(); }
+function deleteSelectedProducts() { let checkedBoxes = document.querySelectorAll('.chk-box:checked'); if(checkedBoxes.length === 0) return alert("Vui lòng chọn ít nhất 1 sản phẩm để xóa!"); if(!confirm(`🛑 CẢNH BÁO: Bạn đang chọn xóa ${checkedBoxes.length} sản phẩm cùng lúc.\nHành động này KHÔNG THỂ HOÀN TÁC!\n\nBạn có chắc chắn muốn tiếp tục?`)) return; let idsToDelete = Array.from(checkedBoxes).map(cb => cb.value); idsToDelete.forEach(id => { addQueueItem('deleteProduct', { "Mã SP": id }); }); ALL_PRODUCTS = ALL_PRODUCTS.filter(p => !idsToDelete.includes(p['Mã SP'])); localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); document.querySelectorAll('.chk-box').forEach(c => c.checked = false); checkBulk(); renderProductsData(); }
 function toggleAllChecks(el) { document.querySelectorAll('.chk-box').forEach(c => c.checked = el.checked); checkBulk(); }
-function checkBulk() { 
-    let cnt = document.querySelectorAll('.chk-box:checked').length; 
-    let bar = document.getElementById('bulkEditBar'); 
-    if(bar) { bar.style.display = cnt > 0 ? 'flex' : 'none'; let sc = document.getElementById('selCount'); if(sc) sc.innerText = cnt; }
-}
-
-function applyBulkEdit() {
-    let updates = {};
-    document.querySelectorAll('.bulk-inp').forEach(inp => { if(inp.value.trim() !== '') updates[inp.dataset.key] = inp.value.trim(); });
-    if(Object.keys(updates).length === 0) return alert("Vui lòng điền ít nhất 1 ô để sửa hàng loạt!");
-    document.querySelectorAll('.chk-box:checked').forEach(c => { 
-        let p = ALL_PRODUCTS.find(x => x['Mã SP'] == c.value); 
-        if(p) { for(let k in updates) { p[k] = updates[k]; } addQueueItem('updateProduct', p); } 
-    });
-    localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); 
-    document.querySelectorAll('.chk-box').forEach(c => c.checked = false); checkBulk(); 
-    document.querySelectorAll('.bulk-inp').forEach(inp => inp.value = ''); renderProductsData();
-}
-
-function openAddProductModal() {
-    document.getElementById('apId').value = ''; document.getElementById('apName').value = '';
-    document.getElementById('apStock').value = 0; document.getElementById('apCat').value = '';
-    document.getElementById('apCost').value = 0; document.getElementById('apRetail').value = 0;
-    document.getElementById('apWholesale').value = 0;
-    document.getElementById('addSpModal').style.display = 'flex';
-}
+function checkBulk() { let cnt = document.querySelectorAll('.chk-box:checked').length; let bar = document.getElementById('bulkEditBar'); if(bar) { bar.style.display = cnt > 0 ? 'flex' : 'none'; let sc = document.getElementById('selCount'); if(sc) sc.innerText = cnt; } }
+function applyBulkEdit() { let updates = {}; document.querySelectorAll('.bulk-inp').forEach(inp => { if(inp.value.trim() !== '') updates[inp.dataset.key] = inp.value.trim(); }); if(Object.keys(updates).length === 0) return alert("Vui lòng điền ít nhất 1 ô để sửa hàng loạt!"); document.querySelectorAll('.chk-box:checked').forEach(c => { let p = ALL_PRODUCTS.find(x => x['Mã SP'] == c.value); if(p) { for(let k in updates) { p[k] = updates[k]; } addQueueItem('updateProduct', p); } }); localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); document.querySelectorAll('.chk-box').forEach(c => c.checked = false); checkBulk(); document.querySelectorAll('.bulk-inp').forEach(inp => inp.value = ''); renderProductsData(); }
+function openAddProductModal() { document.getElementById('apId').value = ''; document.getElementById('apName').value = ''; document.getElementById('apStock').value = 0; document.getElementById('apCat').value = ''; document.getElementById('apCost').value = 0; document.getElementById('apRetail').value = 0; document.getElementById('apWholesale').value = 0; document.getElementById('addSpModal').style.display = 'flex'; }
 
 function saveNewProduct() {
     let newId = document.getElementById('apId').value.trim().toUpperCase(); let newName = document.getElementById('apName').value.trim();
     let newStock = Number(document.getElementById('apStock').value) || 0; let apCat = document.getElementById('apCat').value.trim();
     let apCost = Number(document.getElementById('apCost').value) || 0; let apRetail = Number(document.getElementById('apRetail').value) || 0;
     let apWholesale = Number(document.getElementById('apWholesale').value) || 0;
-
     if(!newId || !newName) return alert("Vui lòng điền Mã SP và Tên SP!");
-
     let existing = ALL_PRODUCTS.find(p => String(p['Mã SP']).trim().toUpperCase() === newId);
     if(existing) {
          let conf = confirm(`⚠️ CẢNH BÁO: Mã hàng [${newId}] đã tồn tại với tên: ${existing['Tên SP']}\n\nBạn có muốn CỘNG THÊM ${newStock} vào tồn kho thay vì tạo mới không?`);
-         if(conf) {
-             let keyTonKho = getKeyByKeyword(existing, 'tồn kho') || 'Tồn kho'; existing[keyTonKho] = (Number(existing[keyTonKho]) || 0) + newStock; addQueueItem('updateProduct', existing);
-         } else {
-             newId = newId + "_" + Date.now().toString().slice(-4);
-             let newP = { "Mã SP": newId, "Tên SP": newName, "Danh mục": apCat, "Tồn kho": newStock, "Đang đặt": 0, "Sỉ từ": "", "Giá bán sỉ": apWholesale, "Giá bán lẻ": apRetail, "Giá gốc": apCost, "% Khuyến mãi": 0, "Giá khuyến mãi": 0 };
-             ALL_PRODUCTS.unshift(newP); addQueueItem('updateProduct', newP); 
-         }
+         if(conf) { let keyTonKho = getKeyByKeyword(existing, 'tồn kho') || 'Tồn kho'; existing[keyTonKho] = (Number(existing[keyTonKho]) || 0) + newStock; addQueueItem('updateProduct', existing); } else { newId = newId + "_" + Date.now().toString().slice(-4); let newP = { "Mã SP": newId, "Tên SP": newName, "Danh mục": apCat, "Tồn kho": newStock, "Đang đặt": 0, "Sỉ từ": "", "Giá bán sỉ": apWholesale, "Giá bán lẻ": apRetail, "Giá gốc": apCost, "% Khuyến mãi": 0, "Giá khuyến mãi": 0 }; ALL_PRODUCTS.unshift(newP); addQueueItem('updateProduct', newP); }
     } else {
-        let newP = { "Mã SP": newId, "Tên SP": newName, "Danh mục": apCat, "Tồn kho": newStock, "Đang đặt": 0, "Sỉ từ": "", "Giá bán sỉ": apWholesale, "Giá bán lẻ": apRetail, "Giá gốc": apCost, "% Khuyến mãi": 0, "Giá khuyến mãi": 0 };
-        ALL_PRODUCTS.unshift(newP); addQueueItem('updateProduct', newP); 
+        let newP = { "Mã SP": newId, "Tên SP": newName, "Danh mục": apCat, "Tồn kho": newStock, "Đang đặt": 0, "Sỉ từ": "", "Giá bán sỉ": apWholesale, "Giá bán lẻ": apRetail, "Giá gốc": apCost, "% Khuyến mãi": 0, "Giá khuyến mãi": 0 }; ALL_PRODUCTS.unshift(newP); addQueueItem('updateProduct', newP); 
     }
     localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); initCategories(); renderProductsData(true); closeModal('addSpModal');
 }
@@ -276,8 +212,7 @@ function saveNewProduct() {
 function openEditProduct(id) {
     let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return; editingProductId = id;
     let eL = document.getElementById('smartLoiNhuan'); if(eL) eL.value = ''; let eK = document.getElementById('smartKM'); if(eK) eK.value = ''; 
-    let keyPctKm = getKeyByKeyword(p, '% khuyến mãi') || '% Khuyến mãi'; let keyGiaKm = getKeyByKeyword(p, 'giá khuyến mãi') || 'Giá khuyến mãi';
-    let html = '';
+    let keyPctKm = getKeyByKeyword(p, '% khuyến mãi') || '% Khuyến mãi'; let keyGiaKm = getKeyByKeyword(p, 'giá khuyến mãi') || 'Giá khuyến mãi'; let html = '';
     Object.keys(p).forEach(k => {
        if(k === 'Mã SP') { html += `<div><label style="font-size:12px;opacity:0.7;">${k}</label><input disabled class="form-inp" style="margin-top:2px;" value="${p[k]}"/></div>`; } 
        else if (String(k).toLowerCase() === String(keyPctKm).toLowerCase() || String(k).toLowerCase() === String(keyGiaKm).toLowerCase()) {} 
@@ -287,34 +222,22 @@ function openEditProduct(id) {
           ALL_CATEGORIES.forEach(c => { let chk = selected.includes(c) ? 'checked' : ''; html += `<label style="font-size:13px; display:flex; align-items:center; gap:5px; margin:0;"><input type="checkbox" class="edit-cat-chk" value="${c}" ${chk}/> ${c}</label>`; });
           html += `</div><input type="text" id="edit_new_cat" class="form-inp" style="margin-top:0;" placeholder="+ Nhập nhóm mới (cách bằng dấu phẩy)"/></div>`;
        } 
-       else if (String(k).toLowerCase().includes('đang đặt')) {
-          html += `<div><label style="font-size:12px;color:#f59e0b;font-weight:bold;">🔒 ${k}</label><input disabled class="form-inp" style="margin-top:2px;background:#fef3c7;color:#333;" value="${p[k]||0}" title="Tự động tính từ đơn hàng Chờ xử lý"/></div>`; 
-       }
+       else if (String(k).toLowerCase().includes('đang đặt')) { html += `<div><label style="font-size:12px;color:#f59e0b;font-weight:bold;">🔒 ${k}</label><input disabled class="form-inp" style="margin-top:2px;background:#fef3c7;color:#333;" value="${p[k]||0}" title="Tự động tính từ đơn hàng Chờ xử lý"/></div>`; }
        else { html += `<div><label style="font-size:12px;opacity:0.7;">${k}</label><input id="edit_${String(k).replace(/\s/g,'_')}" class="form-inp" style="margin-top:2px;" value="${p[k]||''}"/></div>`; }
     });
-
-    html += `<div class="form-grid-full" style="padding:10px; border-radius:8px; border:1px dashed #10b981; display:flex; align-items:center; gap:15px; margin-top:5px;">
-        <div style="flex:1;"><label style="font-size:12px;color:#10b981;font-weight:bold;">% Khuyến Mãi</label><input type="number" id="edit_pct_km_real" class="form-inp" style="margin-top:4px;" value="${p[keyPctKm]||''}" oninput="calcKmPriceInside()" placeholder="% (vd: 10)"/></div>
-        <div style="flex:1;"><label style="font-size:12px;color:#10b981;font-weight:bold;">Giá Đang Sale</label><br/><span id="display_km_price" style="color:#ef4444; font-size:18px; font-weight:bold; display:inline-block; margin-top:8px;">${formatMoney(p[keyGiaKm]||0)}</span></div>
-    </div>`;
-
-    let pb = document.getElementById('productModalBody'); if(pb) pb.innerHTML = html; 
-    let pm = document.getElementById('productModal'); if(pm) pm.style.display = 'flex';
+    html += `<div class="form-grid-full" style="padding:10px; border-radius:8px; border:1px dashed #10b981; display:flex; align-items:center; gap:15px; margin-top:5px;"><div style="flex:1;"><label style="font-size:12px;color:#10b981;font-weight:bold;">% Khuyến Mãi</label><input type="number" id="edit_pct_km_real" class="form-inp" style="margin-top:4px;" value="${p[keyPctKm]||''}" oninput="calcKmPriceInside()" placeholder="% (vd: 10)"/></div><div style="flex:1;"><label style="font-size:12px;color:#10b981;font-weight:bold;">Giá Đang Sale</label><br/><span id="display_km_price" style="color:#ef4444; font-size:18px; font-weight:bold; display:inline-block; margin-top:8px;">${formatMoney(p[keyGiaKm]||0)}</span></div></div>`;
+    let pb = document.getElementById('productModalBody'); if(pb) pb.innerHTML = html; let pm = document.getElementById('productModal'); if(pm) pm.style.display = 'flex';
 }
 
 function saveEditProduct() {
    let p = ALL_PRODUCTS.find(x => x['Mã SP'] == editingProductId); if(!p) return;
    let keyPctKm = getKeyByKeyword(p, '% khuyến mãi') || '% Khuyến mãi'; let keyGiaKm = getKeyByKeyword(p, 'giá khuyến mãi') || 'Giá khuyến mãi';
-
    Object.keys(p).forEach(k => { 
        if(k !== 'Mã SP' && !String(k).toLowerCase().includes('đang đặt')) { 
            if (k === categoryCol) {
                let checked = Array.from(document.querySelectorAll('.edit-cat-chk:checked')).map(el => el.value);
-               let eCat = document.getElementById('edit_new_cat'); let newCats = eCat ? String(eCat.value).split(',').map(s=>s.trim()).filter(s=>s) : [];
-               p[k] = [...new Set([...checked, ...newCats])].join(', ');
-           } else if(String(k).toLowerCase() !== String(keyPctKm).toLowerCase() && String(k).toLowerCase() !== String(keyGiaKm).toLowerCase()) { 
-               let inputEl = document.getElementById('edit_'+String(k).replace(/\s/g,'_')); if(inputEl) p[k] = inputEl.value; 
-           }
+               let eCat = document.getElementById('edit_new_cat'); let newCats = eCat ? String(eCat.value).split(',').map(s=>s.trim()).filter(s=>s) : []; p[k] = [...new Set([...checked, ...newCats])].join(', ');
+           } else if(String(k).toLowerCase() !== String(keyPctKm).toLowerCase() && String(k).toLowerCase() !== String(keyGiaKm).toLowerCase()) { let inputEl = document.getElementById('edit_'+String(k).replace(/\s/g,'_')); if(inputEl) p[k] = inputEl.value; }
        }
    });
    let eKm = document.getElementById('edit_pct_km_real'); if(eKm) p[keyPctKm] = eKm.value; 
@@ -323,43 +246,14 @@ function saveEditProduct() {
 }
 
 function calcInlineKm(e, el, id) {
-    if(e.key === 'Enter') {
-        e.preventDefault(); let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return;
-        let pct = Number(el.value); let keyLe = getKeyByKeyword(p, 'lẻ') || getKeyByKeyword(p, 'bán');
-        let keyPctKm = getKeyByKeyword(p, '% khuyến mãi') || '% Khuyến mãi'; let keyGiaKm = getKeyByKeyword(p, 'giá khuyến mãi') || 'Giá khuyến mãi';
-        if(keyLe) {
-            let giaLe = Number(String(p[keyLe]||0).replace(/[^0-9]/g, "")); let giaMoi = giaLe;
-            if(pct > 0) { giaMoi = smartRound(giaLe * (1 - pct/100)); p[keyPctKm] = pct; p[keyGiaKm] = giaMoi; } 
-            else { p[keyPctKm] = ''; p[keyGiaKm] = giaLe; }
-            localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('updateProduct', p);
-            el.style.background = '#d1fae5'; setTimeout(() => el.style.background = '', 500); renderProductsData(); 
-        }
-    }
+    if(e.key === 'Enter') { e.preventDefault(); let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return; let pct = Number(el.value); let keyLe = getKeyByKeyword(p, 'lẻ') || getKeyByKeyword(p, 'bán'); let keyPctKm = getKeyByKeyword(p, '% khuyến mãi') || '% Khuyến mãi'; let keyGiaKm = getKeyByKeyword(p, 'giá khuyến mãi') || 'Giá khuyến mãi'; if(keyLe) { let giaLe = Number(String(p[keyLe]||0).replace(/[^0-9]/g, "")); let giaMoi = giaLe; if(pct > 0) { giaMoi = smartRound(giaLe * (1 - pct/100)); p[keyPctKm] = pct; p[keyGiaKm] = giaMoi; } else { p[keyPctKm] = ''; p[keyGiaKm] = giaLe; } localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('updateProduct', p); el.style.background = '#d1fae5'; setTimeout(() => el.style.background = '', 500); renderProductsData(); } }
 }
 
-function calcKmPriceInside() {
-    let p = ALL_PRODUCTS.find(x => x['Mã SP'] == editingProductId); if(!p) return;
-    let elLe = document.getElementById('edit_' + String(getKeyByKeyword(p, 'lẻ') || getKeyByKeyword(p, 'bán')).replace(/\s/g,'_'));
-    let giaLe = elLe ? (Number(String(elLe.value).replace(/[^0-9]/g,"")) || 0) : 0;
-    let pctEl = document.getElementById('edit_pct_km_real'); let pct = pctEl ? Number(pctEl.value) : 0;
-    let giaKM = giaLe; if(pct > 0) giaKM = smartRound(giaLe * (1 - pct/100));
-    let dk = document.getElementById('display_km_price'); if(dk) dk.innerText = formatMoney(giaKM);
-}
+function calcKmPriceInside() { let p = ALL_PRODUCTS.find(x => x['Mã SP'] == editingProductId); if(!p) return; let elLe = document.getElementById('edit_' + String(getKeyByKeyword(p, 'lẻ') || getKeyByKeyword(p, 'bán')).replace(/\s/g,'_')); let giaLe = elLe ? (Number(String(elLe.value).replace(/[^0-9]/g,"")) || 0) : 0; let pctEl = document.getElementById('edit_pct_km_real'); let pct = pctEl ? Number(pctEl.value) : 0; let giaKM = giaLe; if(pct > 0) giaKM = smartRound(giaLe * (1 - pct/100)); let dk = document.getElementById('display_km_price'); if(dk) dk.innerText = formatMoney(giaKM); }
 
-function autoCalcRealtimePrice() {
-    let p = ALL_PRODUCTS.find(x => x['Mã SP'] == editingProductId); if(!p) return;
-    let getEl = (kw) => { let k = getKeyByKeyword(p, kw); return k ? document.getElementById('edit_' + String(k).replace(/\s/g,'_')) : null; };
-    let elGoc = getEl('gốc') || getEl('nhập'); let elLe = getEl('lẻ') || getEl('bán');
-    if(!elGoc || !elLe) return;
+function autoCalcRealtimePrice() { let p = ALL_PRODUCTS.find(x => x['Mã SP'] == editingProductId); if(!p) return; let getEl = (kw) => { let k = getKeyByKeyword(p, kw); return k ? document.getElementById('edit_' + String(k).replace(/\s/g,'_')) : null; }; let elGoc = getEl('gốc') || getEl('nhập'); let elLe = getEl('lẻ') || getEl('bán'); if(!elGoc || !elLe) return; let giaGoc = Number(String(elGoc.value).replace(/[^0-9]/g, "")) || 0; let elL = document.getElementById('smartLoiNhuan'); let pctLoi = elL ? Number(elL.value) : 0; let elK = document.getElementById('smartKM'); let pctGiam = elK ? Number(elK.value) : 0; let giaLe = giaGoc; if(pctLoi > 0) { giaLe = smartRound(giaGoc * (1 + pctLoi/100)); elLe.value = giaLe; } if(pctGiam > 0) { let eKm = document.getElementById('edit_pct_km_real'); if(eKm) { eKm.value = pctGiam; calcKmPriceInside(); } } }
 
-    let giaGoc = Number(String(elGoc.value).replace(/[^0-9]/g, "")) || 0;
-    let elL = document.getElementById('smartLoiNhuan'); let pctLoi = elL ? Number(elL.value) : 0; 
-    let elK = document.getElementById('smartKM'); let pctGiam = elK ? Number(elK.value) : 0;
-    let giaLe = giaGoc;
-    if(pctLoi > 0) { giaLe = smartRound(giaGoc * (1 + pctLoi/100)); elLe.value = giaLe; }
-    if(pctGiam > 0) { let eKm = document.getElementById('edit_pct_km_real'); if(eKm) { eKm.value = pctGiam; calcKmPriceInside(); } }
-}
-
+// Tích hợp Nâng cấp 3 (Ô tạo phân loại nhanh)
 function openInlineCatMenu(e, id) {
     e.stopPropagation(); inlineEditCatId = id; let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return;
     let selected = String(p[categoryCol] || '').split(',').map(s=>s.trim());
@@ -371,6 +265,10 @@ function openInlineCatMenu(e, id) {
         html += `<label style="display:flex; align-items:center; padding:8px 15px; cursor:pointer; transition:0.2s; margin:0;"><input type="checkbox" class="inline-cat-chk" value="${c}" onchange="saveInlineCatMenu()" style="margin-right:8px; width:16px; height:16px; accent-color:#0070f4;" ${chk}/> <span style="font-size:13px;">${c}</span></label>`; 
     });
     html += `</div>`;
+    
+    // Khung tạo mới
+    html += `<div style="padding:10px; border-top:1px solid #eee; display:flex; gap:5px;"><input id="inlineNewCatInput" class="form-inp" style="margin:0; flex:1;" placeholder="Tạo phân loại mới..."><button class="action-btn green" onclick="addInlineNewCat()">+</button></div>`;
+    
     html += `<div style="padding:10px; text-align:center; border-top:1px solid #ccc;"><button class="action-btn blue" onclick="closeInlineCatMenu()" style="width:100%; padding:8px;">XONG</button></div>`;
     let menu = document.getElementById('inlineCatMenu'); if(!menu) return;
     menu.innerHTML = html; menu.style.display = 'block';
@@ -378,68 +276,43 @@ function openInlineCatMenu(e, id) {
     if(topPos + 250 > window.innerHeight) topPos = rect.top - 250; 
     menu.style.top = topPos + 'px'; menu.style.left = Math.max(10, rect.left - 50) + 'px';
 }
+
+function addInlineNewCat() {
+    let inp = document.getElementById('inlineNewCatInput'); if(!inp) return;
+    let newVal = inp.value.trim(); if(!newVal) return;
+    
+    if(!ALL_CATEGORIES.includes(newVal)) ALL_CATEGORIES.push(newVal);
+    
+    let p = ALL_PRODUCTS.find(x => x['Mã SP'] == inlineEditCatId);
+    if(p) {
+        let currentCats = String(p[categoryCol] || '').split(',').map(s=>s.trim()).filter(s=>s);
+        if(!currentCats.includes(newVal)) currentCats.push(newVal);
+        p[categoryCol] = currentCats.join(', ');
+        localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS));
+        addQueueItem('updateProduct', p);
+    }
+    
+    initCategories(); // Gọi lại để tạo giao diện menu mới
+    renderProductsData(); // Cập nhật bảng
+    
+    // Vẽ lại menu inline đang mở
+    openInlineCatMenu({stopPropagation:()=>{}, target: document.getElementById('inlineCatMenu')}, inlineEditCatId);
+}
+
 function saveInlineCatMenu() {
     if(!inlineEditCatId) return; let p = ALL_PRODUCTS.find(x => x['Mã SP'] == inlineEditCatId); if(!p) return;
     let checked = Array.from(document.querySelectorAll('.inline-cat-chk:checked')).map(el => el.value);
     p[categoryCol] = checked.join(', '); localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('updateProduct', p); renderProductsData();
 }
 function closeInlineCatMenu() { let m = document.getElementById('inlineCatMenu'); if(m) m.style.display = 'none'; inlineEditCatId = null; }
-function saveInlineEdit(el, id, key) {
-   let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return; let newVal = String(el.innerText).trim();
-   if(String(key).toLowerCase().includes('giá') || String(key).toLowerCase().includes('tiền')) newVal = newVal.replace(/[^0-9]/g, "");
-   if(p[key] != newVal) { p[key] = newVal; localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('updateProduct', p); if(String(key).toLowerCase().includes('giá')) el.innerText = formatMoney(newVal); }
-}
+function saveInlineEdit(el, id, key) { let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return; let newVal = String(el.innerText).trim(); if(String(key).toLowerCase().includes('giá') || String(key).toLowerCase().includes('tiền')) newVal = newVal.replace(/[^0-9]/g, ""); if(p[key] != newVal) { p[key] = newVal; localStorage.setItem('ALL_PRODUCTS', JSON.stringify(ALL_PRODUCTS)); addQueueItem('updateProduct', p); if(String(key).toLowerCase().includes('giá')) el.innerText = formatMoney(newVal); } }
 
 function buildSettingsMenu() {
-    if(ALL_PRODUCTS.length > 0) {
-        let exclude = ['link ảnh', 'chi tiết json', '% khuyến mãi', 'giá khuyến mãi', '% km', 'giá km'];
-        let keysP = Object.keys(ALL_PRODUCTS[0]).filter(k => !exclude.some(ex => String(k).toLowerCase().includes(ex)));
-        let htmlP = '<div style="padding:10px; font-weight:bold; border-bottom:1px solid #eee;">Cột hiển thị:</div>';
-        htmlP += keysP.map(k => `<label><input type="checkbox" onchange="toggleCol('products', '${k}')" ${!hiddenColsProducts[k]?'checked':''}/> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k}</span></label>`).join('');
-        let elP = document.getElementById('colMenuProducts'); if(elP) elP.innerHTML = htmlP;
-    }
-    if(ALL_ORDERS.length > 0) {
-        let exclude = ['chi tiết json'];
-        let keysO = Object.keys(ALL_ORDERS[0]).filter(k => !exclude.some(ex => String(k).toLowerCase().includes(ex)));
-        let htmlO = '<div style="padding:10px; font-weight:bold; border-bottom:1px solid #eee;">Cột hiển thị:</div>';
-        htmlO += keysO.map(k => `<label><input type="checkbox" onchange="toggleCol('orders', '${k}')" ${!hiddenColsOrders[k]?'checked':''}/> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k}</span></label>`).join('');
-        let elO = document.getElementById('colMenuOrders'); if(elO) elO.innerHTML = htmlO;
-    }
+    if(ALL_PRODUCTS.length > 0) { let exclude = ['link ảnh', 'chi tiết json', '% khuyến mãi', 'giá khuyến mãi', '% km', 'giá km']; let keysP = Object.keys(ALL_PRODUCTS[0]).filter(k => !exclude.some(ex => String(k).toLowerCase().includes(ex))); let htmlP = '<div style="padding:10px; font-weight:bold; border-bottom:1px solid #eee;">Cột hiển thị:</div>'; htmlP += keysP.map(k => `<label><input type="checkbox" onchange="toggleCol('products', '${k}')" ${!hiddenColsProducts[k]?'checked':''}/> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k}</span></label>`).join(''); let elP = document.getElementById('colMenuProducts'); if(elP) elP.innerHTML = htmlP; }
+    if(ALL_ORDERS.length > 0) { let exclude = ['chi tiết json']; let keysO = Object.keys(ALL_ORDERS[0]).filter(k => !exclude.some(ex => String(k).toLowerCase().includes(ex))); let htmlO = '<div style="padding:10px; font-weight:bold; border-bottom:1px solid #eee;">Cột hiển thị:</div>'; htmlO += keysO.map(k => `<label><input type="checkbox" onchange="toggleCol('orders', '${k}')" ${!hiddenColsOrders[k]?'checked':''}/> <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${k}</span></label>`).join(''); let elO = document.getElementById('colMenuOrders'); if(elO) elO.innerHTML = htmlO; }
 }
-function toggleCol(type, key) {
-    if(type === 'products') { hiddenColsProducts[key] = !hiddenColsProducts[key]; localStorage.setItem('hiddenColsProducts', JSON.stringify(hiddenColsProducts)); renderProductsData(); } 
-    else { hiddenColsOrders[key] = !hiddenColsOrders[key]; localStorage.setItem('hiddenColsOrders', JSON.stringify(hiddenColsOrders)); renderOrdersData(); }
-}
-function buildBulkEditMenu() {
-    if(ALL_PRODUCTS.length > 0) {
-        let exclude = ['mã sp', 'link ảnh', 'đang đặt', 'khuyến mãi', '% km', 'giá km'];
-        let keys = Object.keys(ALL_PRODUCTS[0]).filter(k => { let lowK = String(k).toLowerCase(); return !exclude.some(ex => lowK.includes(ex)); });
-        let html = keys.map(k => `<div><label style="font-size:11px;opacity:0.7;font-weight:bold;">${k}</label><br/><input type="text" class="form-inp bulk-inp" data-key="${k}" placeholder="Giữ nguyên..." style="padding:6px; margin-top:2px; font-size:12px;"/></div>`).join('');
-        let formGrid = document.getElementById('bulkFormGrid'); if(formGrid) formGrid.innerHTML = html;
-    }
-}
+function toggleCol(type, key) { if(type === 'products') { hiddenColsProducts[key] = !hiddenColsProducts[key]; localStorage.setItem('hiddenColsProducts', JSON.stringify(hiddenColsProducts)); renderProductsData(); } else { hiddenColsOrders[key] = !hiddenColsOrders[key]; localStorage.setItem('hiddenColsOrders', JSON.stringify(hiddenColsOrders)); renderOrdersData(); } }
+function buildBulkEditMenu() { if(ALL_PRODUCTS.length > 0) { let exclude = ['mã sp', 'link ảnh', 'đang đặt', 'khuyến mãi', '% km', 'giá km']; let keys = Object.keys(ALL_PRODUCTS[0]).filter(k => { let lowK = String(k).toLowerCase(); return !exclude.some(ex => lowK.includes(ex)); }); let html = keys.map(k => `<div><label style="font-size:11px;opacity:0.7;font-weight:bold;">${k}</label><br/><input type="text" class="form-inp bulk-inp" data-key="${k}" placeholder="Giữ nguyên..." style="padding:6px; margin-top:2px; font-size:12px;"/></div>`).join(''); let formGrid = document.getElementById('bulkFormGrid'); if(formGrid) formGrid.innerHTML = html; } }
 
-function initResizableColumns() {
-    const tables = document.querySelectorAll('table');
-    tables.forEach(table => {
-        const cols = table.querySelectorAll('th');
-        cols.forEach(col => {
-            if (col.querySelector('.resizer') || col.classList.contains('col-check')) return;
-            const resizer = document.createElement('div');
-            resizer.classList.add('resizer');
-            col.appendChild(resizer);
-            createResizableColumn(col, resizer);
-        });
-    });
-}
-function createResizableColumn(col, resizer) {
-    let x = 0, w = 0;
-    const mouseDownHandler = function(e) {
-        x = e.clientX; const styles = window.getComputedStyle(col); w = parseInt(styles.width, 10);
-        document.addEventListener('mousemove', mouseMoveHandler); document.addEventListener('mouseup', mouseUpHandler);
-        resizer.classList.add('resizing');
-    };
-    const mouseMoveHandler = function(e) { const dx = e.clientX - x; col.style.width = `${w + dx}px`; };
-    const mouseUpHandler = function() { document.removeEventListener('mousemove', mouseMoveHandler); document.removeEventListener('mouseup', mouseUpHandler); resizer.classList.remove('resizing'); };
-    resizer.addEventListener('mousedown', mouseDownHandler);
-}
+function initResizableColumns() { const tables = document.querySelectorAll('table'); tables.forEach(table => { const cols = table.querySelectorAll('th'); cols.forEach(col => { if (col.querySelector('.resizer') || col.classList.contains('col-check')) return; const resizer = document.createElement('div'); resizer.classList.add('resizer'); col.appendChild(resizer); createResizableColumn(col, resizer); }); }); }
+function createResizableColumn(col, resizer) { let x = 0, w = 0; const mouseDownHandler = function(e) { x = e.clientX; const styles = window.getComputedStyle(col); w = parseInt(styles.width, 10); document.addEventListener('mousemove', mouseMoveHandler); document.addEventListener('mouseup', mouseUpHandler); resizer.classList.add('resizing'); }; const mouseMoveHandler = function(e) { const dx = e.clientX - x; col.style.width = `${w + dx}px`; }; const mouseUpHandler = function() { document.removeEventListener('mousemove', mouseMoveHandler); document.removeEventListener('mouseup', mouseUpHandler); resizer.classList.remove('resizing'); }; resizer.addEventListener('mousedown', mouseDownHandler); }
