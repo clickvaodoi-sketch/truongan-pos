@@ -58,11 +58,11 @@ function renderCustomersData(resetLimit = false) {
                     <th class="th-cus-name" title="Tên khách hàng">Tên KH</th>
                     <th class="th-cus-phone" title="Điện thoại">Điện thoại</th>
                     <th style="width: auto; min-width: 150px;" title="Địa chỉ">Địa chỉ</th>
-                    <th class="th-cus-group" title="Nhóm KH">Nhóm KH</th>
-                    <th class="th-cus-debt" title="Công nợ">Công nợ</th>
-                    <th class="th-cus-order" title="Tổng đơn hàng">Đơn</th>
-                    <th class="th-cus-spent" title="Tổng mua">Tổng mua</th>
-                    <th class="th-cus-action">Tác vụ</th>
+                    <th class="th-cus-group text-center" title="Nhóm KH">Nhóm KH</th>
+                    <th class="th-cus-debt text-right" title="Công nợ">Công nợ</th>
+                    <th class="th-cus-order text-center" title="Tổng đơn hàng">Đơn</th>
+                    <th class="th-cus-spent text-right" title="Tổng mua">Tổng mua</th>
+                    <th class="th-cus-action text-center">Tác vụ</th>
                 </tr>
                 <tr style="font-weight:bold; font-size:14px; opacity:0.8;">
                     <td colspan="5">TỔNG CỘNG</td>
@@ -94,18 +94,18 @@ function renderCustomersData(resetLimit = false) {
 
                 if(viewMode === 'table') {
                     html += `<tr>
-                        <td title="${c['Mã khách hàng']}">${c['Mã khách hàng']}</td>
-                        <td title="${cNameTitle}"><div style="display:flex; align-items:center; gap:8px;">
+                        <td class="th-cus-id" title="${c['Mã khách hàng']}">${c['Mã khách hàng']}</td>
+                        <td class="th-cus-name" title="${cNameTitle}"><div style="display:flex; align-items:center; gap:8px;">
                             <div style="width:24px; height:24px; border-radius:50%; background:#0070f4; color:#fff; display:flex; justify-content:center; align-items:center; font-size:12px; font-weight:bold; flex-shrink:0;">${avt}</div>
                             <b style="color:#3b82f6; cursor:pointer;" onclick="viewCustomerOrders('${phone}')" title="Xem đơn khách này">${cName}</b>
                         </div></td>
-                        <td title="${phone}">${phone} ${callLinks}</td>
-                        <td title="${cAddr}">${cAddr}</td>
-                        <td class="text-center" title="${nhom}"><span class="cat-badge ${badgeClass}">${nhom}</span></td>
-                        <td class="text-right" style="font-weight:bold; ${noHienTai !== 0 ? (noHienTai > 0 ? 'color:#ef4444;' : 'color:#10b981;') : 'opacity:0.6;'}" title="${formatMoney(noHienTai)}">${formatMoney(noHienTai)}</td>
-                        <td class="text-center" title="${tongDon}">${tongDon}</td>
-                        <td class="text-right" style="font-weight:bold;" title="${formatMoney(tongBan)}">${formatMoney(tongBan)}</td>
-                        <td class="actions">
+                        <td class="th-cus-phone" title="${phone}">${phone} ${callLinks}</td>
+                        <td style="width: auto; min-width: 150px;" title="${cAddr}">${cAddr}</td>
+                        <td class="th-cus-group text-center" title="${nhom}"><span class="cat-badge ${badgeClass}">${nhom}</span></td>
+                        <td class="th-cus-debt text-right" style="font-weight:bold; ${noHienTai !== 0 ? (noHienTai > 0 ? 'color:#ef4444;' : 'color:#10b981;') : 'opacity:0.6;'}" title="${formatMoney(noHienTai)}">${formatMoney(noHienTai)}</td>
+                        <td class="th-cus-order text-center" title="${tongDon}">${tongDon}</td>
+                        <td class="th-cus-spent text-right" style="font-weight:bold;" title="${formatMoney(tongBan)}">${formatMoney(tongBan)}</td>
+                        <td class="th-cus-action actions">
                             <button class="action-btn gray" style="padding:4px 8px;" title="Sửa thông tin" onclick="openCustomerModal('${phone}')">✏️</button>
                             <button class="action-btn green" style="padding:4px 8px;" title="Thanh toán nợ / Hoàn tiền" onclick="openPayDebtModal('${phone}')">💰</button>
                             ${actionBtnHtml}
