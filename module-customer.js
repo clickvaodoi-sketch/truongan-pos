@@ -30,11 +30,16 @@ function syncCustomerStatsToSheet(phone) {
     cus['Tổng mua'] = stats.totalSpent; cus['Tổng đơn hàng'] = stats.totalOrders;
     cus['Tổng Nợ Thực Tế'] = stats.currentDebt;
     
-    // Đảm bảo không dính rác
-    delete cus['Công nợ']; 
-    delete cus['Loại'];
+    delete cus['Công nợ']; delete cus['Loại'];
 
     localStorage.setItem('ALL_CUSTOMERS', JSON.stringify(ALL_CUSTOMERS)); addQueueItem('updateCustomer', cus);
+}
+
+// Hàm chuyển sang Tab Đơn hàng và LỌC TOÀN BỘ ĐƠN CỦA KHÁCH ĐÓ
+function viewCustomerOrders(phone) {
+    showPage('orders'); 
+    let searchInput = document.getElementById('searchOrders');
+    if(searchInput) { searchInput.value = phone; renderOrdersData(true); }
 }
 
 function renderCustomersData(resetLimit = false) {
@@ -50,6 +55,10 @@ function renderCustomersData(resetLimit = false) {
             });
         }
 
+        // Cập nhật bộ đếm Số lượng khách hàng
+        let cCountEl = document.getElementById('customerCountDisplay');
+        if(cCountEl) cCountEl.innerText = filtered.length;
+
         let totalDeptGlobal = 0; let totalSalesGlobal = 0; let totalOrdersGlobal = 0;
         
         filtered.forEach(c => {
@@ -64,7 +73,7 @@ function renderCustomersData(resetLimit = false) {
                 <tr>
                     <th class="th-cus-id" title="Mã KH">Mã KH</th>
                     <th class="th-cus-name" title="Tên khách hàng">Tên KH</th>
-                    <th class="th-cus-phone" title="Điện thoại">Điện thoại</th>
+                    <th class="th-cus-phone" title="Điện thoại">Liên hệ</th>
                     <th style="width: auto; min-width: 150px;" title="Địa chỉ">Địa chỉ</th>
                     <th class="th-cus-group text-center" title="Nhóm KH">Nhóm KH</th>
                     <th class="th-cus-debt text-right" title="Tổng Nợ Thực Tế">Tổng Nợ Thực Tế</th>
@@ -91,7 +100,10 @@ function renderCustomersData(resetLimit = false) {
                 let phone = cleanPhone(c['Điện thoại']); let noHienTai = c.dynamicStats.currentDebt; 
                 let tongBan = c.dynamicStats.totalSpent; let tongDon = c.dynamicStats.totalOrders;
                 
-                let callLinks = phone ? `<a href="tel:${phone}" style="color:#3b82f6; text-decoration:none; font-size:16px;" title="Gọi điện">📞</a> <a href="https://zalo.me/${phone}" target="_blank" style="color:#10b981; text-decoration:none; font-size:16px; margin-left:5px;" title="Nhắn Zalo">💬</a>` : '';
+                // HIỂN THỊ LINK FACEBOOK
+                let fbIcon = c['Link FB'] ? `<a href="${c['Link FB']}" target="_blank" style="color:#1877f2; text-decoration:none; font-size:16px; margin-left:5px;" title="Mở Facebook">📘</a>` : '';
+                let callLinks = phone ? `<a href="tel:${phone}" style="color:#3b82f6; text-decoration:none; font-size:16px;" title="Gọi điện">📞</a> <a href="https://zalo.me/${phone}" target="_blank" style="color:#10b981; text-decoration:none; font-size:16px; margin-left:5px;" title="Nhắn Zalo">💬</a> ${fbIcon}` : '';
+                
                 let cName = String(c['Tên khách hàng'] || c['Tên KH'] || '---'); let cNameTitle = cName.replace(/"/g, '&quot;');
                 let cAddr = String(c['Địa Chỉ'] || ''); let nhom = c['Nhóm KH'] || 'Khách Lẻ';
                 let badgeClass = nhom.includes('Sỉ') ? 'si' : ''; let avt = cName !== '---' ? cName.charAt(0).toUpperCase() : '👤';
@@ -105,7 +117,7 @@ function renderCustomersData(resetLimit = false) {
                         <td class="th-cus-id" title="${c['Mã khách hàng']}">${c['Mã khách hàng']}</td>
                         <td class="th-cus-name" title="${cNameTitle}"><div style="display:flex; align-items:center; gap:8px;">
                             <div style="width:24px; height:24px; border-radius:50%; background:#0070f4; color:#fff; display:flex; justify-content:center; align-items:center; font-size:12px; font-weight:bold; flex-shrink:0;">${avt}</div>
-                            <b style="color:#3b82f6; cursor:pointer;" onclick="viewCustomerOrders('${phone}')" title="Xem đơn khách này">${cName}</b>
+                            <b style="color:#3b82f6; cursor:pointer;" onclick="viewCustomerOrders('${phone}')" title="Xem tất cả đơn của khách này">${cName}</b>
                         </div></td>
                         <td class="th-cus-phone" title="${phone}">${phone} ${callLinks}</td>
                         <td style="width: auto; min-width: 150px;" title="${cAddr}">${cAddr}</td>
@@ -124,8 +136,8 @@ function renderCustomersData(resetLimit = false) {
                         <div class="cus-card-header">
                             <div class="cus-avt">${avt}</div>
                             <div class="cus-info">
-                                <h4 onclick="viewCustomerOrders('${phone}')" title="Xem lịch sử mua hàng">${cName}</h4>
-                                <span>📞 ${phone} ${callLinks}</span>
+                                <h4 onclick="viewCustomerOrders('${phone}')" title="Xem tất cả đơn của khách này">${cName}</h4>
+                                <span>${phone} ${callLinks}</span>
                                 ${cAddr ? `<span style="margin-top:2px;">📍 ${cAddr}</span>` : ''}
                             </div>
                             <span class="cat-badge ${badgeClass}">${nhom}</span>
@@ -151,16 +163,12 @@ function renderCustomersData(resetLimit = false) {
     } catch(err) { console.error("Lỗi vẽ Khách Hàng", err); }
 }
 
-function viewCustomerOrders(phone) {
-    showPage('orders'); let searchInput = document.getElementById('searchOrders');
-    if(searchInput) { searchInput.value = phone; renderOrdersData(true); }
-}
-
 function openCustomerModal(phone = '') {
     let mTitle = document.getElementById('cusModalTitle'); if(mTitle) mTitle.innerText = phone ? 'SỬA KHÁCH HÀNG' : 'THÊM KHÁCH HÀNG MỚI';
     let op = document.getElementById('cusOldPhone'); let ep = document.getElementById('cusEditPhone');
     let en = document.getElementById('cusEditName'); let ea = document.getElementById('cusEditAddress');
     let ed = document.getElementById('cusEditDebt'); let et = document.getElementById('cusEditType');
+    let eFB = document.getElementById('cusEditFB'); // Thêm biến Edit FB
     
     if(phone) {
         let cus = ALL_CUSTOMERS.find(c => cleanPhone(c['Điện thoại']) === cleanPhone(phone));
@@ -168,9 +176,10 @@ function openCustomerModal(phone = '') {
             if(op) op.value = phone; if(ep) ep.value = phone; if(en) en.value = cus['Tên khách hàng'] || cus['Tên KH'] || '';
             if(ea) ea.value = cus['Địa Chỉ'] || ''; if(ed) ed.value = cus['Nợ Đầu Kỳ'] || 0;
             if(et) et.value = cus['Nhóm KH'] || 'Khách Lẻ';
+            if(eFB) eFB.value = cus['Link FB'] || '';
         }
     } else {
-        if(op) op.value = ''; if(ep) ep.value = ''; if(en) en.value = ''; if(ea) ea.value = ''; if(ed) ed.value = ''; if(et) et.value = 'Khách Lẻ';
+        if(op) op.value = ''; if(ep) ep.value = ''; if(en) en.value = ''; if(ea) ea.value = ''; if(ed) ed.value = ''; if(et) et.value = 'Khách Lẻ'; if(eFB) eFB.value = '';
     }
     let cm = document.getElementById('customerModal'); if(cm) cm.style.display = 'flex';
 }
@@ -181,16 +190,14 @@ function saveCustomer() {
     if(!phone) return alert("Vui lòng nhập số điện thoại (chỉ nhập số)!");
 
     let eN = document.getElementById('cusEditName'); let eA = document.getElementById('cusEditAddress'); let eD = document.getElementById('cusEditDebt');
-    let eT = document.getElementById('cusEditType');
+    let eT = document.getElementById('cusEditType'); let eFB = document.getElementById('cusEditFB');
     let inputDebt = eD ? (Number(eD.value) || 0) : 0;
     
     let newCus = {
         "Mã khách hàng": "", "Tên khách hàng": eN ? eN.value : '', "Điện thoại": phone, "Địa Chỉ": eA ? eA.value : '',
         "Nhóm KH": eT ? eT.value : 'Khách Lẻ', 
-        "Nợ Đầu Kỳ": inputDebt,
-        "Đã Thu Nợ": 0, 
-        "Tổng Nợ Thực Tế": inputDebt, 
-        "Tổng đơn hàng": 0, "Tổng mua": 0
+        "Nợ Đầu Kỳ": inputDebt, "Đã Thu Nợ": 0, "Tổng Nợ Thực Tế": inputDebt, 
+        "Tổng đơn hàng": 0, "Tổng mua": 0, "Link FB": eFB ? eFB.value : ''
     };
 
     if(oldPhone) {
