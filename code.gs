@@ -26,7 +26,7 @@ function processBatch(queue) {
       else if (item.action === "deleteOrder") deleteOrder(item.data.id);
       else if (item.action === "updateOrder") updateOrder(item.data); 
       else if (item.action === "updateProduct") updateProduct(item.data); 
-      else if (item.action === "deleteProduct") deleteProduct(item.data['Mã SP']); // ĐÃ THÊM LỆNH XÓA SP
+      else if (item.action === "deleteProduct") deleteProduct(item.data['Mã SP']); 
       else if (item.action === "updateCustomer") updateCustomer(item.data); 
       else if (item.action === "deleteCustomer") deleteCustomer(item.data.phone); 
       results.push({id: item.id, status: 'success'});
@@ -61,7 +61,8 @@ function autoCreateCols(sheet, neededCols) {
 
 function addOrder(data) {
   const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
-  const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Loại Đơn", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng Số SP", "Tổng Tiền", "Chiết Khấu", "Tổng Tiền Sau Chiết Khấu", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Chi Tiết JSON"]); 
+  // CHUẨN HÓA TÊN CỘT TRÁNH ĐẺ CỘT LẠ
+  const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]); 
   let newRow = new Array(headers.length).fill("");
   headers.forEach((h, i) => {
     let val = data[String(h).trim()];
@@ -72,7 +73,8 @@ function addOrder(data) {
 
 function updateOrder(data) {
   const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
-  const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Loại Đơn", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng Số SP", "Tổng Tiền", "Chiết Khấu", "Tổng Tiền Sau Chiết Khấu", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Chi Tiết JSON"]);
+  // CHUẨN HÓA TÊN CỘT TRÁNH ĐẺ CỘT LẠ
+  const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]);
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return; 
   let idCol = headers.findIndex(h => String(h).trim().toLowerCase() === 'mã đơn');
@@ -88,7 +90,8 @@ function updateOrder(data) {
 
 function updateCustomer(data) {
   const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG']);
-  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Loại"]);
+  // CHUẨN HÓA TÊN CỘT THEO THUẬT TOÁN MỚI
+  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Nhóm KH", "Nợ Đầu Kỳ", "Đã Thu Nợ", "Tổng Nợ Thực Tế", "Tổng đơn hàng", "Tổng mua"]);
   let values = sheet.getDataRange().getValues();
   if (values.length === 0) values = [headers];
   let phoneCol = headers.findIndex(h => String(h).trim().toLowerCase() === 'điện thoại' || String(h).trim().toLowerCase() === 'sdt');
@@ -115,7 +118,8 @@ function updateCustomer(data) {
 
 function updateProduct(data) {
   const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM']);
-  const headers = autoCreateCols(sheet, ["Mã SP", "Tên SP", "Loại", "Tồn kho", "Đang đặt", "Giá bán sỉ", "Giá bán lẻ", "Giá gốc", "% Khuyến mãi", "Giá khuyến mãi"]);
+  // CHUẨN HÓA TÊN CỘT THEO YÊU CẦU MỚI (LOẠI - N)
+  const headers = autoCreateCols(sheet, ["Mã SP", "Tên SP", "Loại - N", "Tồn kho", "Đang đặt", "Sỉ từ", "Giá bán sỉ", "Giá bán lẻ", "Giá gốc", "% Khuyến mãi", "Giá khuyến mãi"]);
   let values = sheet.getDataRange().getValues(); 
   if (values.length === 0) values = [headers];
   let idCol = headers.findIndex(h => String(h).trim().toLowerCase() === 'mã sp');
@@ -133,7 +137,6 @@ function updateProduct(data) {
   }
 }
 
-// ĐÃ THÊM HÀM NÀY ĐỂ THỰC THI XÓA SẢN PHẨM
 function deleteProduct(id) {
   const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM']);
   const values = sheet.getDataRange().getValues();
