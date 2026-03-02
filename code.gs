@@ -61,7 +61,6 @@ function autoCreateCols(sheet, neededCols) {
 
 function addOrder(data) {
   const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
-  // CHUẨN HÓA TÊN CỘT TRÁNH ĐẺ CỘT LẠ
   const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]); 
   let newRow = new Array(headers.length).fill("");
   headers.forEach((h, i) => {
@@ -73,7 +72,6 @@ function addOrder(data) {
 
 function updateOrder(data) {
   const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
-  // CHUẨN HÓA TÊN CỘT TRÁNH ĐẺ CỘT LẠ
   const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]);
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return; 
@@ -90,8 +88,7 @@ function updateOrder(data) {
 
 function updateCustomer(data) {
   const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG']);
-  // CHUẨN HÓA TÊN CỘT THEO THUẬT TOÁN MỚI
-  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Nhóm KH", "Nợ Đầu Kỳ", "Đã Thu Nợ", "Tổng Nợ Thực Tế", "Tổng đơn hàng", "Tổng mua"]);
+  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Nhóm KH", "Nợ Đầu Kỳ", "Tổng Nợ Thực Tế", "Đã Thu Nợ", "Tổng mua", "Tổng đơn hàng"]);
   let values = sheet.getDataRange().getValues();
   if (values.length === 0) values = [headers];
   let phoneCol = headers.findIndex(h => String(h).trim().toLowerCase() === 'điện thoại' || String(h).trim().toLowerCase() === 'sdt');
@@ -118,7 +115,6 @@ function updateCustomer(data) {
 
 function updateProduct(data) {
   const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM']);
-  // CHUẨN HÓA TÊN CỘT THEO YÊU CẦU MỚI (LOẠI - N)
   const headers = autoCreateCols(sheet, ["Mã SP", "Tên SP", "Loại - N", "Tồn kho", "Đang đặt", "Sỉ từ", "Giá bán sỉ", "Giá bán lẻ", "Giá gốc", "% Khuyến mãi", "Giá khuyến mãi"]);
   let values = sheet.getDataRange().getValues(); 
   if (values.length === 0) values = [headers];
