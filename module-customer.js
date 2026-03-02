@@ -4,18 +4,20 @@ function calcCustomerStats(phone) {
     if(!cPhoneClean) return stats;
 
     let cus = ALL_CUSTOMERS.find(c => cleanPhone(c['Điện thoại']) === cPhoneClean);
-    let baseDebt = cus ? (Number(cus['Công nợ']) || 0) : 0; 
+    let baseDebt = cus ? (Number(cus['Nợ Đầu Kỳ']) || 0) : 0; 
+    let daThu = cus ? (Number(cus['Đã Thu Nợ']) || 0) : 0;
     
     let orderDebt = 0;
     ALL_ORDERS.forEach(o => {
         let st = String(o['Trạng Thái']).trim();
         if(cleanPhone(o['SDT']) === cPhoneClean && st !== 'Đã hủy' && st !== 'Nháp' && st !== 'Đã hoàn trả') {
             stats.totalOrders++;
-            stats.totalSpent += Number(String(o['Thành Tiền Sau CK']||o['Tổng Tiền']||0).replace(/[^0-9\-]/g,""));
+            stats.totalSpent += Number(String(o['Thành Tiền Sau Chiết Khấu']||o['Tổng Tiền']||0).replace(/[^0-9\-]/g,""));
             orderDebt += Number(String(o['Còn Nợ']||0).replace(/[^0-9\-]/g,""));
         }
     });
-    stats.currentDebt = baseDebt + orderDebt;
+    
+    stats.currentDebt = baseDebt + orderDebt - daThu;
     return stats;
 }
 
@@ -26,6 +28,12 @@ function syncCustomerStatsToSheet(phone) {
     let cus = ALL_CUSTOMERS.find(c => cleanPhone(c['Điện thoại']) === cPhoneClean); if(!cus) return;
     let stats = calcCustomerStats(cPhoneClean);
     cus['Tổng mua'] = stats.totalSpent; cus['Tổng đơn hàng'] = stats.totalOrders;
+    cus['Tổng Nợ Thực Tế'] = stats.currentDebt;
+    
+    // Đảm bảo không dính rác
+    delete cus['Công nợ']; 
+    delete cus['Loại'];
+
     localStorage.setItem('ALL_CUSTOMERS', JSON.stringify(ALL_CUSTOMERS)); addQueueItem('updateCustomer', cus);
 }
 
@@ -59,7 +67,7 @@ function renderCustomersData(resetLimit = false) {
                     <th class="th-cus-phone" title="Điện thoại">Điện thoại</th>
                     <th style="width: auto; min-width: 150px;" title="Địa chỉ">Địa chỉ</th>
                     <th class="th-cus-group text-center" title="Nhóm KH">Nhóm KH</th>
-                    <th class="th-cus-debt text-right" title="Công nợ">Công nợ</th>
+                    <th class="th-cus-debt text-right" title="Tổng Nợ Thực Tế">Tổng Nợ Thực Tế</th>
                     <th class="th-cus-order text-center" title="Tổng đơn hàng">Đơn</th>
                     <th class="th-cus-spent text-right" title="Tổng mua">Tổng mua</th>
                     <th class="th-cus-action text-center">Tác vụ</th>
@@ -158,7 +166,7 @@ function openCustomerModal(phone = '') {
         let cus = ALL_CUSTOMERS.find(c => cleanPhone(c['Điện thoại']) === cleanPhone(phone));
         if(cus) {
             if(op) op.value = phone; if(ep) ep.value = phone; if(en) en.value = cus['Tên khách hàng'] || cus['Tên KH'] || '';
-            if(ea) ea.value = cus['Địa Chỉ'] || ''; if(ed) ed.value = cus['Công nợ'] || 0;
+            if(ea) ea.value = cus['Địa Chỉ'] || ''; if(ed) ed.value = cus['Nợ Đầu Kỳ'] || 0;
             if(et) et.value = cus['Nhóm KH'] || 'Khách Lẻ';
         }
     } else {
@@ -174,10 +182,15 @@ function saveCustomer() {
 
     let eN = document.getElementById('cusEditName'); let eA = document.getElementById('cusEditAddress'); let eD = document.getElementById('cusEditDebt');
     let eT = document.getElementById('cusEditType');
+    let inputDebt = eD ? (Number(eD.value) || 0) : 0;
     
     let newCus = {
         "Mã khách hàng": "", "Tên khách hàng": eN ? eN.value : '', "Điện thoại": phone, "Địa Chỉ": eA ? eA.value : '',
-        "Nhóm KH": eT ? eT.value : 'Khách Lẻ', "Công nợ": eD ? (Number(eD.value) || 0) : 0, "Tổng đơn hàng": 0, "Tổng mua": 0
+        "Nhóm KH": eT ? eT.value : 'Khách Lẻ', 
+        "Nợ Đầu Kỳ": inputDebt,
+        "Đã Thu Nợ": 0, 
+        "Tổng Nợ Thực Tế": inputDebt, 
+        "Tổng đơn hàng": 0, "Tổng mua": 0
     };
 
     if(oldPhone) {
@@ -186,6 +199,7 @@ function saveCustomer() {
             newCus["Mã khách hàng"] = ALL_CUSTOMERS[idx]["Mã khách hàng"]; 
             newCus["Tổng mua"] = ALL_CUSTOMERS[idx]["Tổng mua"] || 0;
             newCus["Tổng đơn hàng"] = ALL_CUSTOMERS[idx]["Tổng đơn hàng"] || 0;
+            newCus["Đã Thu Nợ"] = ALL_CUSTOMERS[idx]["Đã Thu Nợ"] || 0;
             ALL_CUSTOMERS[idx] = newCus; 
         }
     } else {
@@ -193,7 +207,8 @@ function saveCustomer() {
         if(exists) {
             if(confirm("Khách hàng với SĐT này đã tồn tại! Hệ thống sẽ cập nhật thông tin mới nhất vào khách này.")) {
                  newCus["Mã khách hàng"] = exists["Mã khách hàng"]; newCus["Tổng mua"] = exists["Tổng mua"] || 0;
-                 newCus["Tổng đơn hàng"] = exists["Tổng đơn hàng"] || 0; Object.assign(exists, newCus);
+                 newCus["Tổng đơn hàng"] = exists["Tổng đơn hàng"] || 0; newCus["Đã Thu Nợ"] = exists["Đã Thu Nợ"] || 0;
+                 Object.assign(exists, newCus);
             } else return;
         } else {
             newCus["Mã khách hàng"] = generateCustomerId(); ALL_CUSTOMERS.push(newCus);
@@ -240,8 +255,8 @@ function processPayDebt() {
     let msg = isRefund ? `Xác nhận bạn đã TRẢ LẠI ${formatMoney(amount)} cho khách hàng này?` : `Xác nhận THU NỢ: ${formatMoney(amount)} của khách hàng này?`;
     if(!confirm(msg)) return;
 
-    if(isRefund) { cus['Công nợ'] = (Number(cus['Công nợ']) || 0) + amount; } 
-    else { cus['Công nợ'] = (Number(cus['Công nợ']) || 0) - amount; }
+    if(isRefund) { cus['Đã Thu Nợ'] = (Number(cus['Đã Thu Nợ']) || 0) - amount; } 
+    else { cus['Đã Thu Nợ'] = (Number(cus['Đã Thu Nợ']) || 0) + amount; }
     
     syncCustomerStatsToSheet(phone); closeModal('payDebtModal'); 
     renderCustomersData(); alert("✅ Thanh toán nợ thành công!");
