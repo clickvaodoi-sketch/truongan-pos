@@ -38,10 +38,10 @@ function renderOrdersData(resetLimit = false) {
                 let cCls = essentialCols.includes(k) ? '' : 'hide-on-mobile';
                 if(k==='Mã Đơn') cCls += ' col-id';
                 if(k==='SDT') cCls += ' col-phone';
-                if(k==='Tổng Tiền' || k==='Thanh Toán' || k==='Thành Tiền Sau CK' || k==='Còn Nợ') cCls += ' col-money';
-                if(k!=='Chi Tiết JSON') html += `<th class="${cCls}" title="${k}">${k}</th>`; 
+                if(k==='Tổng Tiền' || k==='Thanh Toán' || k==='Thành Tiền Sau CK' || k==='Còn Nợ' || k==='Khách Thanh Toán') cCls += ' col-money text-right';
+                if(k!=='Chi Tiết JSON') html += `<th class="${cCls.trim()}" title="${k}">${k}</th>`; 
             });
-            html += `<th class="col-action" style="text-align:center;">Tác vụ</th></tr></thead><tbody>`;
+            html += `<th class="col-action text-center">Tác vụ</th></tr></thead><tbody>`;
         }
 
         sliced.forEach(o => {
@@ -57,7 +57,7 @@ function renderOrdersData(resetLimit = false) {
               let maDon = String(o['Mã Đơn']||'').replace(/'/g, "\\'");
 
               if(viewMode === 'table') {
-                 html += `<tr><td style="text-align:center;"><input type="checkbox" class="chk-order-box" value="${maDon}"/></td>`;
+                 html += `<tr><td class="col-check"><input type="checkbox" class="chk-order-box" value="${maDon}"/></td>`;
                  vis.forEach(k => {
                     if(k !== 'Chi Tiết JSON') {
                        let isMoney = (String(k).toLowerCase().includes('tiền') || String(k).toLowerCase().includes('giá') || String(k).toLowerCase().includes('thanh toán') || String(k).toLowerCase().includes('nợ'));
@@ -74,12 +74,16 @@ function renderOrdersData(resetLimit = false) {
                                val = `<span class="price-text" title="Đã giảm: -${formatMoney(raw - finalT)}">-${valNum}%</span>`;
                            } else { val = '0%'; }
                        }
-                       let cls = essentialCols.includes(k)?'':'hide-on-mobile';
-                       if(isMoney) cls += ' text-right';
-                       html += `<td class="${cls}" title="${titleVal}">${val}</td>`;
+                       
+                       let cCls = essentialCols.includes(k) ? '' : 'hide-on-mobile';
+                       if(k==='Mã Đơn') cCls += ' col-id';
+                       if(k==='SDT') cCls += ' col-phone';
+                       if(isMoney) cCls += ' col-money text-right';
+                       
+                       html += `<td class="${cCls.trim()}" title="${titleVal}">${val}</td>`;
                     }
                  });
-                 html += `<td class="actions"><button class="action-btn gray" style="padding:6px; flex:1;" ${lockAttr} onclick="openEditOrderModal('${maDon}')">✏️</button><button class="action-btn gray" style="padding:6px; flex:1;" title="In" onclick="printOrder('${maDon}')">🖨️</button><button class="action-btn ${btnColor}" style="padding:6px; flex:1.5;" ${lockAttr} onclick="markDelivered('${maDon}')">${btnText}</button><button class="action-btn red" style="padding:6px; flex:1;" ${lockAttr} onclick="deleteOrder('${maDon}')">🗑️</button></td></tr>`;
+                 html += `<td class="col-action actions"><button class="action-btn gray" style="padding:6px; flex:1;" ${lockAttr} onclick="openEditOrderModal('${maDon}')">✏️</button><button class="action-btn gray" style="padding:6px; flex:1;" title="In" onclick="printOrder('${maDon}')">🖨️</button><button class="action-btn ${btnColor}" style="padding:6px; flex:1.5;" ${lockAttr} onclick="markDelivered('${maDon}')">${btnText}</button><button class="action-btn red" style="padding:6px; flex:1;" ${lockAttr} onclick="deleteOrder('${maDon}')">🗑️</button></td></tr>`;
               } else {
                  html += `<div class="card"><div class="card-header"><span onclick="openOrderModal('${maDon}')" style="color:#3b82f6; font-weight:bold; cursor:pointer; text-decoration:underline;" title="Bấm để xem chi tiết">${o['Mã Đơn']}</span> <span style="color:${isDelivered?'#10b981':(isDraft?'#f59e0b':'#ef4444')}; font-size:12px; background:${isDelivered?'#d1fae5':(isDraft?'#fef3c7':'#fee2e2')}; padding:3px 10px; border-radius:15px;">${o['Trạng Thái']}</span></div>`;
                  vis.forEach(k => {
@@ -109,7 +113,7 @@ function renderOrdersData(resetLimit = false) {
             html += `<div style="text-align:center; padding:15px; clear:both;"><button class="action-btn blue" onclick="loadMore('ord')" style="padding:10px 20px;">⬇️ Xem thêm dữ liệu</button></div>`;
         }
         let ol = document.getElementById("ordersList"); if(ol) ol.innerHTML = html;
-        if(viewMode === 'table') initResizableColumns();
+        if(viewMode === 'table' && typeof initResizableColumns === 'function') initResizableColumns();
     } catch(err) { console.error("Lỗi Render Orders:", err); }
 }
 
