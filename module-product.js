@@ -55,11 +55,13 @@ function renderProductsData(resetLimit = false) {
         let html = viewMode === 'table' ? `<div class="table-responsive"><table><thead><tr><th class="col-check"><input type="checkbox" onclick="toggleAllChecks(this)"/></th>` : `<div class="data-grid">`;
         if(viewMode === 'table') { 
             vis.forEach(k => {
-                let cClass = k === 'Mã SP' ? 'col-id' : '';
+                let cClass = '';
+                if(k === 'Mã SP') cClass = 'col-id';
+                if(String(k).toLowerCase().includes('tiền') || String(k).toLowerCase().includes('giá') || String(k).toLowerCase().includes('gốc')) cClass += ' text-right';
                 let displayName = (k === categoryCol) ? 'Phân loại' : k; 
-                html += `<th class="${cClass}" title="${k}">${displayName}</th>`;
+                html += `<th class="${cClass.trim()}" title="${k}">${displayName}</th>`;
             }); 
-            html += `<th style="width:100px;">% K.Mãi</th><th class="col-action">Sửa</th></tr></thead><tbody>`; 
+            html += `<th style="width:100px;" class="text-center">% K.Mãi</th><th class="col-action">Tác vụ</th></tr></thead><tbody>`; 
         }
 
         sliced.forEach((p) => {
@@ -72,11 +74,14 @@ function renderProductsData(resetLimit = false) {
               let curPct = p[keyPctKm] || '';
 
               if(viewMode === 'table') {
-                 html += `<tr id="item_${p['Mã SP']}"><td><input type="checkbox" class="chk-box" value="${p['Mã SP']}" onchange="checkBulk()"/></td>`;
+                 html += `<tr id="item_${p['Mã SP']}"><td class="col-check"><input type="checkbox" class="chk-box" value="${p['Mã SP']}" onchange="checkBulk()"/></td>`;
                  vis.forEach(k => {
                     let val = p[k] || ''; let titleVal = String(val).replace(/"/g, '&quot;');
-                    let alignCls = (String(k).toLowerCase().includes('tiền') || String(k).toLowerCase().includes('giá') || String(k).toLowerCase().includes('gốc')) ? 'text-right' : '';
-                    if(k === categoryCol) { html += `<td class="cat-cell-inline ${alignCls}" title="${titleVal}" onclick="openInlineCatMenu(event, '${p['Mã SP']}')">${renderCategoryBadges(val)}</td>`; } 
+                    let alignCls = '';
+                    if(k === 'Mã SP') alignCls = 'col-id';
+                    if(String(k).toLowerCase().includes('tiền') || String(k).toLowerCase().includes('giá') || String(k).toLowerCase().includes('gốc')) alignCls += ' text-right';
+
+                    if(k === categoryCol) { html += `<td class="cat-cell-inline ${alignCls.trim()}" title="${titleVal}" onclick="openInlineCatMenu(event, '${p['Mã SP']}')">${renderCategoryBadges(val)}</td>`; } 
                     else {
                         let isDangDat = String(k).toLowerCase().includes('đang đặt');
                         let isEditable = (!['Mã SP', 'Link ảnh'].includes(k) && !isDangDat) ? `contenteditable="true" class="editable-cell" onblur="saveInlineEdit(this, '${p['Mã SP']}', '${k}')"` : '';
@@ -88,11 +93,11 @@ function renderProductsData(resetLimit = false) {
                         }
                         if(k === 'Mã SP' && isOutOfStock) { val = `<span class="out-of-stock-id">${p[k]}</span>`; }
                         if(isDangDat) { val = `<span style="color:#f59e0b;font-weight:bold;" title="Tự động đồng bộ với đơn hàng">${val}</span>`; }
-                        html += `<td class="${alignCls}" ${isEditable} title="${titleVal}">${val}</td>`;
+                        html += `<td class="${alignCls.trim()}" ${isEditable} title="${titleVal}">${val}</td>`;
                     }
                  });
-                 html += `<td><input type="number" class="inline-km-inp" value="${curPct}" placeholder="%" onkeypress="calcInlineKm(event, this, '${p['Mã SP']}')" title="Gõ % và nhấn Enter để lưu"/></td>`;
-                 html += `<td class="actions"><button class="action-btn gray" style="padding:4px; border-radius:4px;" onclick="openEditProduct('${p['Mã SP']}')">✏️</button><button class="action-btn red" style="padding:4px; border-radius:4px; margin-left:4px;" onclick="deleteProductItem('${p['Mã SP']}')">🗑️</button></td></tr>`;
+                 html += `<td class="text-center" style="width:100px;"><input type="number" class="inline-km-inp" value="${curPct}" placeholder="%" onkeypress="calcInlineKm(event, this, '${p['Mã SP']}')" title="Gõ % và nhấn Enter để lưu"/></td>`;
+                 html += `<td class="col-action actions"><button class="action-btn gray" style="padding:4px; border-radius:4px;" onclick="openEditProduct('${p['Mã SP']}')">✏️</button><button class="action-btn red" style="padding:4px; border-radius:4px; margin-left:4px;" onclick="deleteProductItem('${p['Mã SP']}')">🗑️</button></td></tr>`;
               } else {
                  html += `<div class="card" id="item_${p['Mã SP']}"><input type="checkbox" class="chk-box" style="position:absolute;top:15px;right:15px;z-index:10;" value="${p['Mã SP']}" onchange="checkBulk()"/>`;
                  if(p['Link ảnh']) html += `<img class="card-img-top" src="${p['Link ảnh']}" onclick="openImageModal(this.src)"/>`;
@@ -114,7 +119,7 @@ function renderProductsData(resetLimit = false) {
         if(viewMode === 'table') html += `</tbody></table></div>`; else html += `</div>`;
         if(filtered.length > limitProd) html += `<div style="text-align:center; padding:15px; clear:both;"><button class="action-btn blue" onclick="loadMore('prod')" style="padding:10px 20px;">⬇️ Xem thêm dữ liệu</button></div>`;
         let pl = document.getElementById("productsList"); if(pl) pl.innerHTML = html;
-        if(viewMode === 'table') initResizableColumns();
+        if(viewMode === 'table' && typeof initResizableColumns === 'function') initResizableColumns();
     } catch(err) { console.error(err); }
 }
 
@@ -196,7 +201,6 @@ function processAllDuplicates() {
     }
 }
 
-// CÁC HÀM XỬ LÝ SẢN PHẨM KHÁC
 function deleteProductItem(id) {
     let p = ALL_PRODUCTS.find(x => x['Mã SP'] == id); if(!p) return;
     if(!confirm(`⚠️ Bạn có chắc chắn muốn xóa vĩnh viễn sản phẩm:\n[${id}] - ${p['Tên SP']}?`)) return;
@@ -415,7 +419,6 @@ function buildBulkEditMenu() {
     }
 }
 
-// Bổ sung code cho kéo giãn cột
 function initResizableColumns() {
     const tables = document.querySelectorAll('table');
     tables.forEach(table => {
