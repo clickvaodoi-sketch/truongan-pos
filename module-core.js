@@ -1,6 +1,8 @@
 // ==========================================
 // MODULE CORE: BIẾN TOÀN CỤC & ĐỒNG BỘ DATA
 // ==========================================
+
+// BẠN HÃY DÁN LINK API MỚI NHẤT TỪ GOOGLE APPS SCRIPT VÀO TRONG DẤU NGOẶC KÉP Ở DƯỚI ĐÂY:
 const API = "https://script.google.com/macros/s/AKfycbyYGE5lb_Ag6pEa9YT8C31tbk4-lCMu0brWzhqbYo-F3gybmQnRn6Lw8KSFTKGji69Urg/exec"; 
 
 // --- CÁC BIẾN TOÀN CỤC ---
@@ -61,6 +63,31 @@ document.addEventListener('keydown', function(e) {
         document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
         document.querySelectorAll('.dropdown-content').forEach(d => d.classList.remove('show'));
         if(typeof closeSuggest === 'function') { closeSuggest('cusSuggestAdd'); closeSuggest('cusSuggestEdit'); }
+    }
+});
+
+// TÍNH NĂNG MỚI: CLICK RA NGOÀI ĐỂ TẮT MENU/POPUP
+document.addEventListener('click', function(e) {
+    // 1. Đóng menu cài đặt cột hiển thị (nếu click không rơi vào nút bấm có class 'dropdown')
+    if(!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-content').forEach(d => {
+            if(d.id !== 'inlineCatMenu') d.classList.remove('show');
+        });
+    }
+    
+    // 2. Đóng menu chọn Phân loại (inlineCatMenu)
+    let inlineMenu = document.getElementById('inlineCatMenu');
+    if(inlineMenu && inlineMenu.style.display === 'block') {
+        // Nếu click không trúng cái menu VÀ không trúng cái ô phân loại đang bấm
+        if(!e.target.closest('#inlineCatMenu') && !e.target.classList.contains('cat-cell-inline')) {
+            inlineMenu.style.display = 'none';
+            if (typeof inlineEditCatId !== 'undefined') inlineEditCatId = null;
+        }
+    }
+    
+    // 3. Đóng bảng gợi ý tên/sđt Khách hàng khi tạo đơn
+    if(!e.target.closest('.suggest-box') && e.target.id !== 'cPhone' && e.target.id !== 'cName' && e.target.id !== 'eoPhone' && e.target.id !== 'eoName') {
+        document.querySelectorAll('.suggest-box').forEach(b => b.style.display = 'none');
     }
 });
 
