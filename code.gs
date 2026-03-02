@@ -3,9 +3,9 @@ const SHEET_ID = '1sQtuh32Leh3SKB2k3l4D3vXUQyZSMCYdWlaqB-i2DLM';
 function doGet(e) {
   const type = e.parameter.type;
   if (type === "dashboard") return json({ totalOrders: 0, totalRevenue: 0 });
-  if (type === "products") return json(getSheetData(getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM'])));
-  if (type === "orders") return json(getSheetData(getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG'])).reverse());
-  if (type === "customers") return json(getSheetData(getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG'])));
+  if (type === "products") return json(getSheetData(getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM', 'Sản phẩm'])));
+  if (type === "orders") return json(getSheetData(getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG', 'Đơn hàng'])).reverse());
+  if (type === "customers") return json(getSheetData(getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG', 'Khách hàng'])));
   return json({ error: "Tham số không hợp lệ" });
 }
 
@@ -35,9 +35,18 @@ function processBatch(queue) {
   return { success: true, results: results };
 }
 
+// Hàm tìm Tab thông minh chống đẻ Tab thừa
 function getSafeSheet(names) {
   let ss = SpreadsheetApp.openById(SHEET_ID);
-  for (let n of names) { let sh = ss.getSheetByName(n); if (sh) return sh; }
+  let sheets = ss.getSheets();
+  for (let n of names) {
+    let cleanName = String(n).trim().toLowerCase();
+    for (let sh of sheets) {
+      if (String(sh.getName()).trim().toLowerCase() === cleanName) {
+        return sh;
+      }
+    }
+  }
   return ss.insertSheet(names[0]);
 }
 
@@ -60,7 +69,7 @@ function autoCreateCols(sheet, neededCols) {
 }
 
 function addOrder(data) {
-  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
+  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG', 'Đơn hàng']);
   const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]); 
   let newRow = new Array(headers.length).fill("");
   headers.forEach((h, i) => {
@@ -71,7 +80,7 @@ function addOrder(data) {
 }
 
 function updateOrder(data) {
-  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
+  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG', 'Đơn hàng']);
   const headers = autoCreateCols(sheet, ["Mã Đơn", "Thời Gian", "Tên Khách Hàng", "SDT", "Địa Chỉ", "Ghi Chú", "Tổng SP", "Tổng Tiền", "Chiết Khấu %", "Thành Tiền Sau Chiết Khấu", "Chi Tiết JSON", "Trạng Thái", "Khách Thanh Toán", "Còn Nợ", "Loại Đơn"]);
   const values = sheet.getDataRange().getValues();
   if (values.length < 2) return; 
@@ -87,8 +96,8 @@ function updateOrder(data) {
 }
 
 function updateCustomer(data) {
-  const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG']);
-  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Nhóm KH", "Nợ Đầu Kỳ", "Tổng Nợ Thực Tế", "Đã Thu Nợ", "Tổng mua", "Tổng đơn hàng"]);
+  const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG', 'Khách hàng']);
+  const headers = autoCreateCols(sheet, ["Mã khách hàng", "Tên khách hàng", "Điện thoại", "Địa Chỉ", "Nhóm KH", "Nợ Đầu Kỳ", "Đã Thu Nợ", "Tổng Nợ Thực Tế", "Tổng đơn hàng", "Tổng mua"]);
   let values = sheet.getDataRange().getValues();
   if (values.length === 0) values = [headers];
   let phoneCol = headers.findIndex(h => String(h).trim().toLowerCase() === 'điện thoại' || String(h).trim().toLowerCase() === 'sdt');
@@ -114,7 +123,7 @@ function updateCustomer(data) {
 }
 
 function updateProduct(data) {
-  const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM']);
+  const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM', 'Sản phẩm']);
   const headers = autoCreateCols(sheet, ["Mã SP", "Tên SP", "Loại - N", "Tồn kho", "Đang đặt", "Sỉ từ", "Giá bán sỉ", "Giá bán lẻ", "Giá gốc", "% Khuyến mãi", "Giá khuyến mãi"]);
   let values = sheet.getDataRange().getValues(); 
   if (values.length === 0) values = [headers];
@@ -134,7 +143,7 @@ function updateProduct(data) {
 }
 
 function deleteProduct(id) {
-  const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM']);
+  const sheet = getSafeSheet(['SanPham', 'Sản Phẩm', 'SẢN PHẨM', 'Sản phẩm']);
   const values = sheet.getDataRange().getValues();
   if(values.length < 2) return;
   let idCol = values[0].findIndex(h => String(h).trim().toLowerCase() === 'mã sp');
@@ -147,7 +156,7 @@ function deleteProduct(id) {
 }
 
 function deleteCustomer(phone) {
-  const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG']);
+  const sheet = getSafeSheet(['KhachHang', 'Khách Hàng', 'KHÁCH HÀNG', 'Khách hàng']);
   const values = sheet.getDataRange().getValues();
   if(values.length < 2) return;
   let pCol = values[0].findIndex(h => String(h).trim().toLowerCase().includes('điện thoại') || String(h).trim().toLowerCase().includes('sdt'));
@@ -157,7 +166,7 @@ function deleteCustomer(phone) {
 }
 
 function updateStatus(id, status) {
-  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
+  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG', 'Đơn hàng']);
   const values = sheet.getDataRange().getValues(); 
   if(values.length === 0) return;
   let idCol = values[0].findIndex(h => String(h).trim().toLowerCase() === 'mã đơn');
@@ -168,7 +177,7 @@ function updateStatus(id, status) {
 }
 
 function deleteOrder(id) {
-  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG']);
+  const sheet = getSafeSheet(['DonHang', 'Đơn Hàng', 'ĐƠN HÀNG', 'Đơn hàng']);
   const values = sheet.getDataRange().getValues();
   if(values.length === 0) return;
   let idCol = values[0].findIndex(h => String(h).trim().toLowerCase() === 'mã đơn');
